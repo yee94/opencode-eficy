@@ -7,3 +7,9 @@ export function isLocalFileLink(href: unknown): href is string {
   if (/^[a-z]:[\\/]/i.test(href)) return true;
   return !/^[a-z][a-z\d+.-]*:/i.test(href) && !/^[#?]/.test(href);
 }
+
+/** Match local preview links; the host selects the highest-priority matching handler. */
+export function isPreviewFileLink(href: unknown, extension: string): boolean {
+  if (!isLocalFileLink(href)) return false;
+  return href.split(/[?#]/, 1)[0].endsWith(extension);
+}

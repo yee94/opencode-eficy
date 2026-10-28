@@ -4,6 +4,24 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, it } from 'vitest';
 import plugin from '../packages/opencode2-plugin/src/index';
+import shadcn from '../packages/opencode2-shadcn/src/index';
+
+it.each([[plugin, shadcn], [shadcn, plugin]])('keeps both plugin catalogs without overwriting registrations', async (...plugins) => {
+  const skills = new Map<string, unknown>();
+  const tools = new Map<string, unknown>();
+  for (const current of plugins) await current.setup({
+    skill: { transform: async (callback: (editor: unknown) => void) => callback({ add: (skill: { id: string }) => {
+      expect(skills.has(skill.id)).toBe(false);
+      skills.set(skill.id, skill);
+    } }) },
+    tool: { transform: async (callback: (editor: unknown) => void) => callback({ add: (tool: { name: string }) => {
+      expect(tools.has(tool.name)).toBe(false);
+      tools.set(tool.name, tool);
+    } }) },
+  } as never);
+  expect([...skills.keys()].sort()).toEqual(['eficy', 'eficy-shadcn']);
+  expect([...tools.keys()].sort()).toEqual(['eficy_shadcn_template', 'eficy_shadcn_validate', 'eficy_validate']);
+});
 
 it('registers and executes the real SDK transforms, injecting built runtime versions', async () => {
   const skills: { id: string; name: string; path: string; content: string }[] = [];
