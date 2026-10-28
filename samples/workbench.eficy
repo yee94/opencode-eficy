@@ -1,0 +1,72 @@
+import { signal, computed, component } from 'eficy';
+import { Button, Input } from 'shadcn';
+
+const tasks = signal([
+  { id: 1, title: '打开 .eficy 文件，直接预览', detail: '当前页面就是磁盘文件渲染的结果。', done: true },
+  { id: 2, title: '把运行时与插件一起交付', detail: 'Eficy、shadcn/ui 与 React 内置加载。', done: true },
+  { id: 3, title: '让 AI 用 skill 继续创作', detail: '生成、校验、保存，再回到这里查看。', done: false },
+]);
+const draft = signal('');
+const showOpen = signal(false);
+const completed = computed(() => tasks.value.filter(task => task.done).length);
+const visible = computed(() => tasks.value.filter(task => !showOpen.value || !task.done));
+const toggle = (id) => { tasks.value = tasks.value.map(task => task.id === id ? { ...task, done: !task.done } : task); };
+const add = () => {
+  const title = draft.value.trim();
+  if (!title) return;
+  tasks.value = [...tasks.value, { id: Date.now(), title, detail: '在预览中添加的交互演示事项。', done: false }];
+  draft.value = '';
+};
+
+export default component(() => (
+  <main className="workbench">
+    <style>{`
+      :root { color-scheme: light dark; --paper: Canvas; --ink: CanvasText; --quiet: color-mix(in srgb, CanvasText 58%, Canvas); --rule: color-mix(in srgb, CanvasText 16%, Canvas); --plate: color-mix(in srgb, CanvasText 9%, Canvas); }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--paper); color: var(--ink); font-family: ui-sans-serif, system-ui, sans-serif; }
+      .workbench { max-width: 860px; margin: auto; padding: clamp(20px, 5vw, 48px); }
+      .masthead { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 28px; color: var(--quiet); font-size: 12px; }
+      .brand { font-size: 18px; font-weight: 650; letter-spacing: -.6px; color: var(--ink); }
+      .hero { margin-bottom: 36px; }
+      .hero h1 { font-size: clamp(28px, 5vw, 44px); font-weight: 580; letter-spacing: -1.5px; line-height: 1.2; margin: 0 0 16px; }
+      .hero p { max-width: 48ch; color: var(--quiet); font-size: 14px; line-height: 1.8; margin: 0; }
+      .section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 4px; }
+      .section-head h2 { font-size: 15px; margin: 0; font-weight: 650; }
+      .progress { color: var(--quiet); font-size: 12px; margin: 0 0 18px; }
+      .task { display: grid; grid-template-columns: 22px 1fr; gap: 12px; padding: 20px 0; border-top: 1px solid var(--rule); }
+      .task input { width: 17px; height: 17px; margin: 3px 0 0; accent-color: var(--ink); cursor: pointer; }
+      .task-title { font-size: 14px; font-weight: 550; line-height: 1.6; cursor: pointer; }
+      .task p { color: var(--quiet); font-size: 12px; line-height: 1.7; margin: 6px 0 0; }
+      .entry { display: flex; gap: 8px; margin-top: 24px; }
+      .entry input { flex: 1; min-width: 0; padding: 10px 12px; border: 1px solid var(--rule); border-radius: 8px; background: var(--paper); color: var(--ink); font: inherit; font-size: 13px; }
+      .workbench .action { min-height: 38px; padding: 8px 14px; border: 0; border-radius: 8px; background: var(--plate); color: var(--ink); font-size: 12px; white-space: nowrap; cursor: pointer; box-shadow: none; }
+      .workbench .action:hover { background: color-mix(in srgb, CanvasText 16%, Canvas); }
+      .workbench :focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+      .footnote { border-top: 1px solid var(--rule); margin-top: 32px; padding-top: 18px; font-size: 11px; line-height: 1.8; color: var(--quiet); }
+      .empty { color: var(--quiet); padding: 24px 0; font-size: 14px; }
+      @media(max-width: 420px) { .masthead { padding-bottom: 22px; } .hero { margin-bottom: 28px; } .entry { flex-wrap: wrap; } .entry input { width: 100%; } }
+    `}</style>
+    <header className="masthead"><span className="brand">Eficy 工作台</span><span>.eficy / 本地运行</span></header>
+    <section className="hero">
+      <h1>想法，变成可用界面。</h1>
+      <p>一份 JSX 文件，带着组件、状态和交互，在文件标签页中直接运行。试着勾选事项，或加上你的下一步。</p>
+    </section>
+    <div className="section-head">
+      <h2>本次交付</h2>
+      <Button className="action" aria-pressed={showOpen.value} onClick={() => { showOpen.value = !showOpen.value; }}>{showOpen.value ? '查看全部' : '只看未完成'}</Button>
+    </div>
+    <p className="progress">已完成 {completed} / {tasks.value.length}</p>
+    <section aria-label="交付事项">
+      {visible.value.map(task => <div className="task" key={task.id}>
+        <input id={`task-${task.id}`} type="checkbox" checked={task.done} onChange={() => toggle(task.id)} />
+        <div><label className="task-title" htmlFor={`task-${task.id}`}>{task.title}</label><p>{task.detail}</p></div>
+      </div>)}
+      {visible.value.length === 0 && <p className="empty">全部完成。可以开始下一件事了。</p>}
+    </section>
+    <form className="entry" onSubmit={event => { event.preventDefault(); add(); }}>
+      <Input aria-label="新事项" placeholder="写下你的下一步…" value={draft.value} onChange={event => { draft.value = event.target.value; }} />
+      <Button className="action" type="submit">添加事项</Button>
+    </form>
+    <footer className="footnote">交互由 Eficy signals 驱动，组件来自内置 shadcn/ui。<br />修改并保存源文件，预览会自动更新。</footer>
+  </main>
+));
