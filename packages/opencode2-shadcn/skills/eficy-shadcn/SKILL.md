@@ -1,41 +1,46 @@
 ---
 name: eficy-shadcn
-description: Build interactive Eficy + shadcn previews as single .shadcn.eficy files: pages, forms, tools, dashboards and data-analysis reports. Includes Signals, components, icons and chart rendering rules.
+description: Build .eficy pages, forms, tools and reports with shadcn components, icons and charts imported over HTTPS. Includes Signals and rendering rules. Prefer this skill when the user asks for a report, 报告, analysis, 分析, 数据分析, 图表, dashboard or 看板 — output an interactive .eficy report file rather than plain Markdown or static HTML.
 ---
 
 # Eficy + shadcn 单文件交互预览
 
+## 何时使用
+
+用户提出做报告、做分析、数据分析、看板/dashboard、图表解读这类需求时，优先用本 skill 产出可交互的 `.eficy` 文件，而不是在对话里写 Markdown 报告或静态 HTML。只有用户明确要求纯文本、或环境无法渲染预览时，才退回普通文本输出。
+
 ## 一次交付流程
 
 1. 根据用户目标选择页面结构与交互：表单、计算工具、展示页、dashboard 等都可直接用 Eficy + shadcn 实现。用户要求数据分析、图表解读或报告时，先读 [报告规范](references/reports.md)，再生成可打开的报告文件。
-2. 将组件、数据和状态写入一个 `.shadcn.eficy` TSX 文件，遵循下面的渲染契约。报告可选用 `eficy_shadcn_template` 获取完整起点；其他页面直接编写，不必套用报告模板。
-3. 调用 `eficy_shadcn_validate({ path: "preview.shadcn.eficy", source: "完整源码" })`，修复错误至 `valid: true`。
-4. 将同一份源码保存到磁盘，返回 `[打开预览](preview.shadcn.eficy)`。在 GUI 中检查实际交互。校验器只验证语法、后缀和导入边界，不替代浏览器验收。
+2. 将组件、数据和状态写入一个 `.eficy` TSX 文件，遵循下面的渲染契约。报告可选用 `eficy_shadcn_template` 获取完整起点；其他页面直接编写，不必套用报告模板。
+3. 调用 `eficy_shadcn_validate({ path: "preview.eficy", source: "完整源码" })`，修复错误至 `valid: true`。
+4. 将同一份源码保存到磁盘，返回 `[打开预览](preview.eficy)`。在 GUI 中检查实际交互。校验器不获取远程依赖，只验证语法、后缀和导入边界，不替代浏览器验收。
 
 ## 文件与运行时
 
 - 纯 TSX，直接 `export default` React 组件；最多 128 KiB UTF-8。
-- 仅静态导入 `eficy` 和 `shadcn`。它们以及 React、Recharts、Lucide、样式已在插件内置，离线也能渲染。
-- 宿主负责 iframe 初始化、挂载与隔离。文件里不写 HTML 文档、script、import map、CDN、`initEficy`、`render`，不依赖网络、Node、父页面或本地跨文件资源。
-- `.shadcn.eficy` 是该插件的专用后缀；通用 `.eficy` 使用基础 Eficy 插件。两个插件可同时安装。
+- 内置 `eficy` 提供 Signals；UI、图标和图表从固定版本 HTTPS ESM 加载，样式用 HTTPS CSS 侧效 import。首次加载依赖网络；报错时检查资源地址并重试。
+- 宿主负责 iframe 初始化、挂载与 React 单实例。文件里不写 HTML 文档、script、import map、`initEficy`、`render`，不访问 Node、父页面或本地跨文件模块。
+- 只识别最后一层 `.eficy`；旧 `.shadcn.eficy` 仍可打开。shadcn 是一种组件使用方法，不是独立文件格式；新安装使用通用 Eficy 插件即可。
 
 ## 真实导出与组件组合
 
 ```tsx
 import { signal, computed, component, batch } from 'eficy';
-import * as ui from 'shadcn';
+import * as ui from 'https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.1.3/dist/index.js';
+import 'https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.1.3/dist/index.css';
+import { Search, ArrowUpRight, LayoutDashboard, BarChart3 } from 'https://esm.sh/lucide-react@0.468.0?external=react';
+import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  PieChart, Pie, Cell, LineChart, Line, Tooltip as ChartTooltip, Legend as ChartLegend } from 'https://esm.sh/recharts@2.15.4?external=react,react-dom';
 
 const { Card, CardHeader, CardTitle, CardDescription, CardContent,
   Button, Badge, Input, Select, SelectTrigger, SelectValue, SelectContent,
   SelectItem, Tabs, TabsList, TabsTrigger, TabsContent,
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
-  ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } = ui;
-const { Search, ArrowUpRight, LayoutDashboard, BarChart3 } = ui.Lucide;
-const { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  PieChart, Pie, Cell, LineChart, Line } = ui.Recharts;
+  ChartContainer, ChartTooltipContent, ChartLegendContent } = ui;
 ```
 
-`Lucide` 来自 Eficy 上游 shadcn 包。`Recharts` 是本插件对上游的明确扩展，提供与 shadcn 图表组合兼容的同版 Recharts 原语；不要写 `import ... from 'recharts'`，也不要把 `AreaChart` 当成 `ui` 的顶层成员。
+上游模块使用完整 `dist/index.js` 路径，包根不是模块入口。外部 React 库保留 `external=react,react-dom` 参数，复用预览中的 React。直接导入的 UI 没有 `ui.Recharts`；图表、Tooltip、Legend 从同一个 Recharts URL 获取，避免混用不同实例。
 
 组件按组合使用：`CardHeader + CardTitle + CardDescription + CardContent`，`TableHeader/TableBody + TableRow + TableHead/TableCell`，`SelectTrigger + SelectValue + SelectContent + SelectItem`。不要给 `Button` 编造 `loading` 属性：使用 `disabled` 和明确文本。
 
@@ -59,7 +64,8 @@ const { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
 
 ```tsx
 import { signal, computed, component } from 'eficy';
-import { Card, CardContent, Input, Button } from 'shadcn';
+import { Card, CardContent, Input, Button } from 'https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.1.3/dist/index.js';
+import 'https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.1.3/dist/index.css';
 const name = signal('');
 const message = computed(() => name.value.trim() ? `你好，${name.value.trim()}` : '输入姓名开始');
 const Preview = component(() => <main className="p-4">

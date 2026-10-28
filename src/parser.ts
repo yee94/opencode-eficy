@@ -38,19 +38,29 @@ export function parseEficy(path: string, source: string) {
   const tokens = file.tokens;
   const text = (index: number) => tokens[index] ? source.slice(tokens[index].start, tokens[index].end) : '';
   const imports = new Set<string>();
+  const styles: { url: string; start: number; end: number }[] = [];
   let defaults = 0;
   for (let i = 0; i < tokens.length; i++) {
     const token = tokens[i];
     if (token.type === TokenType._import || (token.type === TokenType.name && text(i) === 'import' && tokens[i + 1]?.type === TokenType.dot)) {
       if (tokens[i + 1]?.type === TokenType.parenL || tokens[i + 1]?.type === TokenType.dot) {
-        throw new EficyValidationError('import', 'Dynamic import and import.meta are unavailable; use static built-in imports.');
+        throw new EficyValidationError('import', 'Dynamic import and import.meta are unavailable; use static eficy or HTTPS imports.');
       }
       let moduleIndex = i + 1;
       while (moduleIndex < tokens.length && tokens[moduleIndex].type !== TokenType.string && tokens[moduleIndex].type !== TokenType.semi) moduleIndex++;
       const specifier = text(moduleIndex);
       const builtin = BUILTIN_IMPORTS.find((name) => specifier === `'${name}'` || specifier === `"${name}"`);
-      if (!builtin) throw new EficyValidationError('import', 'Only static imports from "eficy" and "shadcn" are available; remote, relative, and other package imports are unsupported.');
-      imports.add(builtin);
+      const name = specifier.slice(1, -1);
+      let remote: URL | undefined;
+      try { remote = new URL(name); } catch { /* A built-in name is not a URL. */ }
+      if (!builtin && (!remote || remote.protocol !== 'https:' || remote.username || remote.password || name.includes('\\'))) {
+        throw new EficyValidationError('import', 'Only static imports from "eficy", legacy "shadcn", or absolute HTTPS URLs are available.');
+      }
+      if (remote?.pathname.endsWith('.css')) {
+        if (moduleIndex !== i + 1) throw new EficyValidationError('import', 'CSS requires a side-effect import: import "https://…/style.css".');
+        styles.push({ url: name, start: token.start, end: tokens[moduleIndex].end });
+      }
+      imports.add(builtin ?? name);
     }
     if (token.type === TokenType._export && !token.isType) {
       if (tokens[i + 1]?.type === TokenType._default) defaults++;
@@ -65,5 +75,5 @@ export function parseEficy(path: string, source: string) {
     }
   }
   if (defaults !== 1) throw new EficyValidationError('default-export', 'Expected exactly one direct default export of a React component.');
-  return { source, bytes, imports: [...imports] };
+  return { source, bytes, imports: [...imports], styles };
 }

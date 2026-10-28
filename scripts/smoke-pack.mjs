@@ -20,6 +20,9 @@ try {
       assert(entries.includes(`package/${required}`), `${name} is missing ${required}`);
     }
     assert(entries.some(entry => entry.startsWith('package/skills/')), 'Missing skills');
+    if (name.startsWith('eficy-opencode2-plugin-')) {
+      assert(entries.includes('package/skills/eficy/references/shadcn.md'), 'Missing general Eficy shadcn reference');
+    }
     assert(entries.some(entry => entry.startsWith('package/samples/')), 'Missing samples');
     assert(!entries.some(entry => /^package\/(src|node_modules|tests)\//.test(entry)), 'Source or dependencies leaked into tarball');
   }

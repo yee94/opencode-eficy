@@ -77,6 +77,17 @@ describe('opaque preview frame lifecycle', () => {
     receive('ready');
     expect(post).toHaveBeenCalledTimes(1);
   });
+  it('restarts the isolated document on retry and resends the latest source after ready', () => {
+    vi.useFakeTimers();
+    const { frame, post, receive } = setup();
+    frame.update('current source');
+    receive('ready');
+    receive('retry');
+    frame.update('latest source');
+    expect(post).toHaveBeenCalledTimes(1);
+    receive('ready');
+    expect(post.mock.calls.at(-1)?.[0]).toMatchObject({ type: 'update', source: 'latest source' });
+  });
   it('requests unmount then removes the frame on disposal acknowledgement and ignores updates', () => {
     vi.useFakeTimers();
     const { frame, post, receive } = setup();
@@ -108,8 +119,9 @@ describe('opaque preview frame lifecycle', () => {
     expect(csp).toContain("default-src 'none'");
     expect(csp).toContain('connect-src blob:');
     const payload = JSON.parse(html.querySelector('#eficy-payload')!.textContent!);
+    expect(payload.theme).toBe('dark');
     expect(payload.eficy).toContain('compileJSXWithCSS');
-    expect(payload.shadcn).toContain('Button');
+    expect(payload.shadcn).toContain('https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.1.3/dist/index.js');
     expect(frame.element.srcdoc).not.toContain('src="http');
   });
 });

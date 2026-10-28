@@ -36,16 +36,16 @@ describe('bundled official standalone', () => {
     expect(result.css).toContain('padding:1rem');
     expect(result.css).toContain('.text-red-500');
     expect(result.css).not.toContain('mock styles');
+    const remote = await eficy.compileJSXWithCSS('import { Button } from "https://example.invalid/ui.js"; export default () => <Button />;');
+    expect(remote.compiledCode).toContain('https://example.invalid/ui.js');
   });
 
-  it('loads the pinned shadcn module with the same isolated React 18 instance', async () => {
-    const shadcn = await loadModule(url(assets.shadcn));
-    expect(shadcn.Button).toBeTruthy();
-    for (const name of ['ChartContainer', 'ChartTooltip', 'ChartTooltipContent', 'Card', 'Table', 'Select', 'Tabs']) expect(shadcn[name], name).toBeTruthy();
-    const charts = shadcn.Recharts as Record<string, unknown>;
-    for (const name of ['AreaChart', 'Area', 'BarChart', 'Bar', 'PieChart', 'Pie', 'Cell', 'CartesianGrid']) expect(charts[name], name).toBeTruthy();
-    expect(shadcn.ChartTooltip).toBe(charts.Tooltip);
-    expect(shadcn.ChartLegend).toBe(charts.Legend);
+  it('ships only a thin pinned remote compatibility adapter, not the UI/chart runtime', () => {
+    expect(assets.shadcn.length).toBeLessThan(2000);
+    expect(assets.shadcn).toContain('https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.1.3/dist/index.js');
+    expect(assets.shadcn).toContain('https://esm.sh/recharts@2.15.4?external=react,react-dom');
+    for (const name of ['Recharts', 'ChartTooltip', 'ChartLegend']) expect(assets.shadcn).toContain(name);
+    expect(assets.shadcnCSS).toBe('https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.1.3/dist/index.css');
     expect(React.version).toBe('18.3.1');
   });
 });

@@ -1,21 +1,21 @@
-# Eficy：包内运行时的交互预览
+# Eficy：单文件交互预览
 
-一个 OpenCode 插件同时提供 `eficy` skill、`eficy_validate` 工具与 `.eficy` GUI 预览。服务端插件 ID 为 `eficy`，SDK 使用 `@opencode/plugin` 2.2.0。iframe 内打包真实 Eficy browser、shadcn、React 与样式，运行时不从 CDN 下载依赖。
+一个 OpenCode 插件同时提供 `eficy` skill、`eficy_validate` 工具与 `.eficy` GUI 预览。服务端插件 ID 为 `eficy`，SDK 使用 `@opencode/plugin` 2.2.0。iframe 内置 Eficy/React；组件、图标、图表及 CSS 通过固定版本 HTTPS 地址按需加载。shadcn 是 skill 中的组件使用方法，不需要第二个渲染插件。
 
 ## 安装（OpenCode 2）
 
-在连接服务的全局 `opencode.json(c)` 中加入 npm 包，保留已有配置：
+`0.3.0` 支持 HTTPS 模块与 CSS 导入。在连接服务的全局 `opencode.json(c)` 中加入 npm 包，保留已有配置：
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugins": ["@eficy/opencode2-plugin@0.2.1"]
+  "plugins": ["@eficy/opencode2-plugin@0.3.0"]
 }
 ```
 
 配置保存后由 OpenCode 重新加载插件。终端可使用 skill 和校验工具；可视化预览需要支持标准 `./gui-experimental` 入口的 GUI 宿主。GUI API 仍为实验性接口，本版本针对 `@opencode/plugin` 2.2.0 构建。
 
-也可通过 `npm pack @eficy/opencode2-plugin@0.2.1` 下载 tgz，在本地目录运行 `npm install /path/to/eficy-opencode2-plugin-0.2.1.tgz`，再将安装后的 `node_modules/@eficy/opencode2-plugin` 绝对路径加入全局 `plugins`。
+也可用本仓库 `pnpm pack:all` 生成 tgz，安装后将对应 `node_modules/@eficy/opencode2-plugin` 绝对路径加入全局 `plugins`。
 
 ## 本地构建与安装
 
@@ -45,7 +45,7 @@ pnpm test
 
 > 使用 eficy 技能生成一个带计数按钮和姓名输入框的 demo.eficy，先用 eficy_validate 验证，再保存并返回链接。
 
-`.eficy` 是单文件纯 TSX，直接默认导出一个 React 组件。只允许静态导入 `eficy` 和 `shadcn`。完整 Signals 示例见 [`skills/eficy/SKILL.md`](skills/eficy/SKILL.md)。保存到磁盘后，点击 `[打开预览](demo.eficy)` 或侧边文件树中的文件，在现有文件标签页内渲染预览。
+`.eficy` 是单文件纯 TSX，直接默认导出一个 React 组件。支持静态 `eficy` 与 HTTPS ESM/CSS 导入，旧 `shadcn` 裸导入保留兼容。只看最后一层后缀；旧 `report.shadcn.eficy` 同样可打开。完整 Signals 示例见 [`skills/eficy/SKILL.md`](skills/eficy/SKILL.md)。保存后点击文件链接或文件树，在现有文件标签页内预览。
 
 源码变化会重新求值模块，模块级 Signal 状态可能重置；同内容更新不应重载。预览状态不是持久数据。文件读取失败、语法或渲染失败必须显示错误；真实浏览器保存更新、交互和恢复流程由集成验收确认。
 
@@ -55,9 +55,9 @@ pnpm test
 
 `eficy_validate({ path, source })` 只处理传入文本，不读取目标路径、不执行代码、不解析网络或磁盘依赖。Sucrase 执行真正的 TSX 语法解析；同一语法 token 流用于检查默认导出和 import 边界。源码限制为 **128 KiB UTF-8**。失败返回 `valid: false`、`code` 和 `error`，区分缺失输入、路径、超限、语法、默认导出、导入与 frame 文档边界问题。
 
-格式要求直接 `export default`；命名导出、重导出、相对路径、远程 URL、其他 npm 包、动态 import、`require`、`loadModule` 均不支持。不写 HTML 文档、script 标签、CDN 模板或 React Hooks；初始化与挂载属于 frame。可用 import 是包内模块映射，不是网络 import map。
+格式要求直接 `export default`；支持固定版本的 HTTPS 浏览器模块与 CSS 侧效导入。相对本地模块、未映射的 npm 包名、动态 import、`require`、`loadModule` 不支持。外部 React 库需保留 React external，使用 frame 的共享实例；初始化、import map 和挂载由 frame 管理。静态校验通过不证明 CDN 可达或模块包含所需导出。
 
-静态校验不是类型检查或安全沙箱，也不能证明默认导出值可渲染。用户源码只应在隔离 iframe 运行；宿主不求值它。iframe 权限、CSP、消息来源校验和资源清理由 frame 承担。源码不得依赖父页 DOM、宿主 SDK、Node API 或网络数据。
+静态校验不是类型检查或安全沙箱，也不能证明默认导出值可渲染。源码在客户端编译并在隔离 iframe 运行，不发送到 CDN；网络用于获取外部资源。iframe 权限、CSP、消息来源校验和资源清理由 frame 承担，不授予父页 DOM、宿主 SDK 或 Node API 能力。首次加载需要网络及资源端 CORS 支持，浏览器缓存不等于完整离线保证。
 
 iframe 采用 `allow-scripts allow-forms`，不授予 same-origin 权限。`allow-forms` 让 React 的 `onSubmit` 可以收到原生表单事件，CSP 的 `form-action 'none'` 仍禁止网络表单提交。消息通过 source 与独立 frameId 校验；opaque origin 的首次握手只能使用通配目标，不传递宿主凭据。
 
@@ -81,7 +81,7 @@ ctx.add(FileIcon, { id: 'eficy', extensions: ['eficy'], svg: fileIcon });
 
 ## 版本与更新
 
-依赖版本以 `package.json` 和锁文件为源。构建产出 `dist/runtime-manifest.json`，契约为 `{ pluginVersion, packages: { "包名": "精确版本" } }`。服务端启动时读取同包 manifest，将版本动态注入 skill；skill 模板不另抄版本 pin。
+内置依赖版本以 `package.json` 和锁文件为源，构建产出 `dist/runtime-manifest.json`，服务端将版本注入 skill。外部组件版本由文件中的 HTTPS URL 决定；更新后需重新验证导出、样式、React 兼容和交互。
 
 更新包依赖后须重新构建内置运行时和 GUI，运行验证，更新插件版本，并把运行时产物、manifest 与 skill 同包发布。不能只改 skill 里的文字来宣称运行时已升级。解析器使用已固定 Sucrase 版本的内部 token API，升级 Sucrase 时同时验证 parser 测试和浏览器编译行为。
 
@@ -91,9 +91,9 @@ ctx.add(FileIcon, { id: 'eficy', extensions: ['eficy'], svg: fileIcon });
 
 `tests/parser.test.ts` 覆盖真实语法、默认导出、导入策略、字节边界、文档标签与 skill 示例；`tests/server.test.ts` 使用真实 SDK 定义执行 skill/tool transforms，检查 manifest 注入和工具错误结果。先构建运行时，再运行测试。
 
-自动测试不能替代浏览器验收。实际宿主应检查：文件链接与侧边文件树打开后的文件标签页预览、Signals 输入和按钮、源码更新/同内容不重载、错误与修复、跨文件/会话隔离、关闭与卸载清理，以及断网时内置依赖仍可加载。
+自动测试不能替代浏览器验收。实际宿主应检查：文件链接与侧边文件树打开后的预览、Signals 交互、HTTPS 模块/CSS 加载、源码更新、错误与修复、跨文件/会话隔离和关闭清理。外部依赖断网或 404 时须显示可恢复错误，不承诺离线可用。
 
-### 本次验收（2026-10-28）
+### 历史内置运行时验收（HTTPS 重构之前）
 
 - 插件 42 项测试、Yuri GUI 宿主 71 项相关测试通过；类型检查、Web/VS Code 构建及打包检查通过。压缩安装包约 586 KiB。
 - 安装生成的 tgz 后，仅使用 production dependencies，服务端入口、skill 版本注入、工具校验及样例文件读取通过。

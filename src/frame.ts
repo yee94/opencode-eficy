@@ -31,6 +31,11 @@ export function createPreviewFrame(options: { version?: string; theme?: 'light' 
       if (message.type === 'disposed') remove();
       return;
     }
+    if (message.type === 'retry') {
+      ready = false;
+      element.srcdoc = documentSource;
+      return;
+    }
     if (message.type === 'open-link' && ready && isLocalFileLink(message.href) && typeof message.background === 'boolean') {
       void Promise.resolve().then(() => {
         if (disposed) return;
@@ -50,9 +55,10 @@ export function createPreviewFrame(options: { version?: string; theme?: 'light' 
   element.setAttribute('sandbox', 'allow-scripts allow-forms');
   element.setAttribute('title', 'Eficy preview');
   element.style.cssText = 'width:100%;height:100%;border:0;display:block';
-  const payload = JSON.stringify({ frameId, nonce, theme: options.theme ?? 'light', eficy: runtime.eficy, shadcn: runtime.shadcn, shadcnCSS: runtime.shadcnCSS }).replace(/</g, '\\u003c');
+  const payload = JSON.stringify({ frameId, nonce, theme: options.theme ?? 'dark', eficy: runtime.eficy, shadcn: runtime.shadcn, shadcnCSS: runtime.shadcnCSS }).replace(/</g, '\\u003c');
   const inline = (text: string) => text.replace(/<\/script/gi, '<\\/script');
-  element.srcdoc = `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' blob:; style-src 'unsafe-inline' blob:; img-src data: blob:; font-src data: blob:; connect-src blob:; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'none'"><style>html,body{margin:0;min-height:100%;font-family:system-ui,sans-serif}#eficy-error{white-space:pre-wrap;color:var(--status-error,CanvasText);background:var(--surface-background,Canvas);border-bottom:1px solid currentColor;padding:12px;margin:0;font:13px/1.5 monospace}#eficy-error[hidden]{display:none}</style></head><body><pre id="eficy-error" role="alert" hidden></pre><div id="eficy-root"></div><script id="eficy-payload" type="application/json">${payload}</script><script nonce="${nonce}">${inline(runtime.react)}</script><script nonce="${nonce}">${inline(runtime.bootstrap)}</script></body></html>`;
+  const documentSource = `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' blob: https:; style-src 'unsafe-inline' blob: https:; img-src data: blob: https:; font-src data: blob: https:; connect-src blob: https:; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'none'"><style>html,body{margin:0;min-height:100%;font-family:system-ui,sans-serif}#eficy-error{white-space:pre-wrap;color:var(--status-error,CanvasText);background:var(--surface-background,Canvas);border-bottom:1px solid currentColor;padding:12px;margin:0;font:13px/1.5 monospace}#eficy-error[hidden]{display:none}</style></head><body><pre id="eficy-error" role="alert" hidden></pre><div id="eficy-root"></div><script id="eficy-payload" type="application/json">${payload}</script><script nonce="${nonce}">${inline(runtime.react)}</script><script nonce="${nonce}">${inline(runtime.bootstrap)}</script></body></html>`;
+  element.srcdoc = documentSource;
   return {
     element,
     update(nextSource) {

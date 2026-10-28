@@ -62,10 +62,10 @@ describe('GUI plugin coexistence with OpenCode routing and panel contracts', () 
     expect(app.tabs()).toEqual(['eficy-shadcn:report.shadcn.eficy']);
     app.click('page.eficy');
     expect(app.open).toHaveBeenCalledTimes(2);
-    expect(app.tabs().sort()).toEqual(['eficy-shadcn:report.shadcn.eficy', 'eficy:page.eficy']);
+    expect(app.tabs().sort()).toEqual(['eficy-shadcn:page.eficy', 'eficy-shadcn:report.shadcn.eficy']);
     app.click('report.shadcn.eficy');
     expect(app.tabs()).toHaveLength(2);
-    expect(app.items(Panel).map(entry => entry.value.mobile?.title).sort()).toEqual(['Eficy', 'Eficy · shadcn']);
+    expect(app.items(Panel).map(entry => entry.value.mobile?.title).sort()).toEqual(['Eficy', 'Eficy']);
     expect(app.entries.filter(entry => entry.registry === 'yuri.file-icon').map(entry => (entry.value as { id: string }).id).sort())
       .toEqual(['eficy', 'eficy-shadcn']);
   });
@@ -77,12 +77,12 @@ describe('GUI plugin coexistence with OpenCode routing and panel contracts', () 
     expect(app.tabs()).toEqual(['eficy:page.eficy', 'eficy:report.shadcn.eficy']);
   });
 
-  it('keeps the standalone shadcn plugin scoped to its suffix', () => {
+  it('previews ordinary and legacy compound filenames with the standalone shadcn plugin', () => {
     const app = host(['eficy-shadcn']);
     app.click('page.eficy');
     app.click('report.shadcn.eficy');
-    expect(app.open).toHaveBeenCalledTimes(1);
-    expect(app.tabs()).toEqual(['eficy-shadcn:report.shadcn.eficy']);
+    expect(app.open).toHaveBeenCalledTimes(2);
+    expect(app.tabs()).toEqual(['eficy-shadcn:page.eficy', 'eficy-shadcn:report.shadcn.eficy']);
   });
 
   it('leaves remote URLs and fragment links to the host', () => {

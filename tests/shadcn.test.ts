@@ -27,17 +27,17 @@ it('registers an independent skill, validator and complete templates with the pa
   const template = async (input: unknown) => JSON.parse((await tools[1].execute(input)).content);
   for (const preset of ['analytics', 'operations']) {
     const result = await template({ preset });
-    expect(result.path).toBe(`${preset}.shadcn.eficy`);
+    expect(result.path).toBe(`${preset}.eficy`);
     expect(result.demoData).toBe(true);
-    expect(result.source).toBe(readFileSync(join(root, 'samples', result.path), 'utf8'));
-    expect(await validate({ path: result.path, source: result.source })).toMatchObject({ valid: true, imports: ['eficy', 'shadcn'] });
+    expect(result.source).toBe(readFileSync(join(root, 'samples', `${preset}.shadcn.eficy`), 'utf8'));
+    expect(await validate({ path: result.path, source: result.source })).toMatchObject({ valid: true, imports: expect.arrayContaining(['eficy', 'https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.1.3/dist/index.js', 'https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.1.3/dist/index.css']) });
     expect(result.source).toContain('ChartContainer');
-    expect(result.source).toContain('Recharts');
+    expect(result.source).toContain('https://esm.sh/recharts@2.15.4?external=react,react-dom');
     expect(parseEficy(result.path, result.source).bytes).toBeLessThan(128 * 1024);
   }
   expect(await template({ preset: '../../package.json' })).toMatchObject({ valid: false });
   expect(await template({ preset: '__proto__' })).toMatchObject({ valid: false });
-  expect(await validate({ path: 'generic.eficy', source: 'export default () => <div />' })).toMatchObject({ valid: false, code: 'path' });
+  expect(await validate({ path: 'generic.eficy', source: 'export default () => <div />' })).toMatchObject({ valid: true });
   expect(await validate({ path: 'site.shadcn.eficy', source: 'import {Area} from "recharts"; export default () => <Area />' })).toMatchObject({ valid: false, code: 'import' });
 });
 

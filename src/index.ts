@@ -41,7 +41,7 @@ return Plugin.define({
     }));
     await ctx.tool.transform((editor) => editor.add({
       name: options.validateTool,
-      description: 'Validate complete .eficy TSX text before saving. Parses syntax and built-in import boundaries without execution or file access.',
+      description: 'Validate complete .eficy TSX text before saving. Parses syntax and static built-in/HTTPS import boundaries without execution, network or file access.',
       input: {
         type: 'object',
         properties: { path: { type: 'string' }, source: { type: 'string' } },
@@ -65,7 +65,7 @@ return Plugin.define({
       const templates = options.templates;
       await ctx.tool.transform((editor) => editor.add({
         name: options.templateTool!,
-        description: 'Return a complete, validated dark shadcn data-analysis report TSX template with local demo data, conclusions and a compact 400–600px reading layout. Customize the source, validate it and save it as one .shadcn.eficy file. Does not write files.',
+        description: 'Return a complete, validated dark shadcn data-analysis report TSX template with local demo data, conclusions and a compact 400–600px reading layout. Customize the source, validate it and save it as one .eficy file. Does not write files.',
         input: { type: 'object', properties: { preset: { type: 'string', enum: Object.keys(templates) } }, required: ['preset'], additionalProperties: false },
         execute: async (input) => {
           if (!input || typeof input !== 'object' || !('preset' in input) || typeof input.preset !== 'string' || !Object.hasOwn(templates, input.preset)) {
@@ -74,7 +74,7 @@ return Plugin.define({
           const filename = templates[input.preset];
           const source = await readFile(new URL(`../samples/${filename}`, options.moduleURL), 'utf8');
           parseEficy(filename, source);
-          return { content: JSON.stringify({ path: filename, source, validator: options.validateTool, demoData: true }) };
+          return { content: JSON.stringify({ path: `${input.preset}.eficy`, source, validator: options.validateTool, demoData: true }) };
         },
       }));
     }

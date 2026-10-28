@@ -68,7 +68,7 @@ describe('iframe execution boundary', () => {
   it('validates with the shared parser before compiling or evaluating, retaining the previous render', async () => {
     send('export default function App() { return "previous content"; }');
     await vi.waitFor(() => expect(content()).toBe('previous content'));
-    send('import unsafe from "https://example.invalid/module.js"; window.executed = true; export default function App() { return unsafe; }');
+    send('import unsafe from "./module.js"; window.executed = true; export default function App() { return unsafe; }');
     await vi.waitFor(() => expect(error().hidden).toBe(false));
     expect(error().textContent).toContain('Only static imports');
     expect(content()).toBe('previous content');
@@ -93,6 +93,36 @@ describe('iframe execution boundary', () => {
     await vi.waitFor(() => expect(content()).toBe('recovered'));
     expect(error().hidden).toBe(true);
     consoleError.mockRestore();
+  });
+
+  it('shows CSS failures, retries the same source and removes stale styles before committing the latest update', async () => {
+    // Drive load/error deterministically rather than making network requests in happy-dom.
+    const stylesheet = vi.spyOn(HTMLLinkElement.prototype, 'rel', 'set').mockImplementation(() => {});
+    const source = 'import "https://example.invalid/retry.css"; export default () => "styled";';
+    send(source);
+    await vi.waitFor(() => expect(document.querySelector('link[href="https://example.invalid/retry.css"]')).toBeTruthy());
+    const failed = document.querySelector<HTMLLinkElement>('link[href="https://example.invalid/retry.css"]')!;
+    failed.dispatchEvent(new Event('error'));
+    await vi.waitFor(() => expect(error().textContent).toContain('Unable to load stylesheet'));
+    expect(failed.isConnected).toBe(false);
+    expect(content()).toBe('recovered');
+    send(source);
+    await vi.waitFor(() => expect(document.querySelector('link[href="https://example.invalid/retry.css"]')).toBeTruthy());
+    const loaded = document.querySelector<HTMLLinkElement>('link[href="https://example.invalid/retry.css"]')!;
+    loaded.dispatchEvent(new Event('load'));
+    await vi.waitFor(() => expect(content()).toBe('styled'));
+    expect(loaded.media).toBe('all');
+    send('import "https://example.invalid/stale.css"; export default () => "stale CSS";');
+    await vi.waitFor(() => expect(document.querySelector('link[href="https://example.invalid/stale.css"]')).toBeTruthy());
+    const stale = document.querySelector<HTMLLinkElement>('link[href="https://example.invalid/stale.css"]')!;
+    send('export default () => "fresh CSS";');
+    await vi.waitFor(() => expect(content()).toBe('fresh CSS'));
+    expect(stale.isConnected).toBe(false);
+    expect(loaded.isConnected).toBe(false);
+    stale.dispatchEvent(new Event('load'));
+    expect(content()).toBe('fresh CSS');
+    expect(error().hidden).toBe(true);
+    stylesheet.mockRestore();
   });
 
   it('skips identical source and revokes runtime and compiled URLs on disposal', async () => {

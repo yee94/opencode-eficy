@@ -1,6 +1,6 @@
 ---
 name: eficy
-description: Create or repair single-file .eficy TSX interactive previews with built-in Eficy signals and shadcn components.
+description: Create or repair .eficy interactive pages, forms, tools and reports using Eficy Signals and HTTPS imports for component libraries, icons and charts.
 ---
 
 # Eficy 单文件交互预览
@@ -8,15 +8,15 @@ description: Create or repair single-file .eficy TSX interactive previews with b
 ## 交付步骤
 
 1. 把页面写成一个 `.eficy` 文件：纯 TSX，直接 `export default` 一个 React 组件。所有逻辑、样式类和数据留在这个文件。
-2. 仅静态导入内置的 `eficy`、`shadcn`。iframe 已内置真实 Eficy browser、shadcn、React 和样式；组件无需初始化、挂载或安装依赖。
+2. 从内置 `eficy` 导入 Signals；组件、图标、图表使用固定版本 HTTPS ESM 地址，CSS 使用 HTTPS 侧效 import。需要 shadcn 或报告时读 [组件与图表](references/shadcn.md)。渲染器与 React 由插件管理，无需新插件或其他后缀。
 3. 用 `eficy_validate` 传入目标 `path` 与完整 `source`。修正返回的错误，直到 `valid: true`；UTF-8 源码最多 128 KiB。
 4. 保存同一份已验证源码到磁盘，返回 `[打开预览](相对路径.eficy)`。点击链接或侧边文件树中的文件，在现有文件标签页内渲染预览。静态校验通过只证明格式与导入边界，交互效果仍需在 GUI 预览中检查。
 
 ## 文件边界
 
-默认导出由预览负责挂载。使用 `className` 的 Tailwind/UnoCSS 工具类和 `shadcn` 组件。文件不是 HTML 模板：不写文档标签、`script` 标签、CDN、import map、`initEficy` 或 `render`。仅使用上述两个内置 import；相对文件、其他 npm 包、动态 import、`require`、`loadModule` 均不支持。React 由运行时提供，不导入 React，也不写 React Hooks。
+默认导出由预览负责挂载。使用 `className` 的 Tailwind/UnoCSS 工具类；外部组件样式显式导入。文件是 TSX 组件，不写文档标签、`script`、import map、`initEficy` 或 `render`。支持静态 `eficy` 与 HTTPS 模块导入；相对模块、未映射的 npm 包名、动态 import、`require`、`loadModule` 不支持。业务状态使用 Signals。
 
-预览是隔离 iframe 中执行的代码，不是任意 Node/宿主 API 执行环境。使用本地示例数据；不要依赖外网请求、父页面 DOM、宿主 SDK 或跨文件资源。验证器只解析文本，不执行源码，不做 TypeScript 类型检查，也不证明导出值一定是可渲染组件。
+预览在隔离 iframe 中执行，HTTPS 依赖由当前客户端直接加载。首次加载需要网络与 CDN 的 CORS 支持；源码仍在本机编译。依赖不可用时修正地址或重试，不改文件后缀。验证器只解析文本，不执行源码、不获取远程模块、不验证它们的真实导出，也不代替浏览器验收。父页面 DOM、宿主 SDK 和 Node API 不可用。
 
 ## 文件链接
 
@@ -29,14 +29,13 @@ description: Create or repair single-file .eficy TSX interactive previews with b
 - 输入使用 `bind`。数字输入保留字符串中间态，在 `computed` 中转换。
 - 数组、对象用新引用赋值；多个关联更新可用 `batch`。
 - 必需的副作用用 `effect`，避免在同一 effect 中订阅又更新同一个 Signal；不需订阅的读取用 `peek`。
-- 图标通过 `shadcnUi.Lucide` 获取。
+- 图标使用 HTTPS 图标库；React 库保留 `react` external，复用预览的单实例 React。
 
 ```tsx
 import { signal, computed, component, bind } from 'eficy';
-import * as shadcnUi from 'shadcn';
-
-const { Button, Input, Card, CardContent } = shadcnUi;
-const { Plus } = shadcnUi.Lucide;
+import { Button, Input, Card, CardContent } from 'https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.1.3/dist/index.js';
+import 'https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.1.3/dist/index.css';
+import { Plus } from 'https://esm.sh/lucide-react@0.468.0?external=react';
 const name = signal('Ada');
 const count = signal(0);
 const doubled = computed(() => count.value * 2);
@@ -62,6 +61,6 @@ export default App;
 
 ## 当前包内运行时
 
-以下信息由插件从构建产物 `dist/runtime-manifest.json` 注入；它是可用版本的依据。更新依赖后须重构运行时并随插件一起发布，生成文件不写版本 URL。
+以下信息由插件从构建产物 `dist/runtime-manifest.json` 注入。内置 Eficy/React 随插件版本更新；远程组件由文件中的固定版本 URL 决定。已有 `import ... from 'shadcn'` 为旧文件兼容入口，新文件按上述 HTTPS 写法生成。所有文件只识别最后一层 `.eficy`。
 
 {{RUNTIME_VERSIONS}}

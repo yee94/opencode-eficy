@@ -5,8 +5,6 @@ import { build } from 'esbuild';
 import webpack from 'webpack';
 import { runtimeManifest } from './runtime-manifest.mjs';
 import { packagePath } from './package-path.mjs';
-import React from 'react';
-import ReactDOM from 'react-dom';
 
 const root = new URL('../', import.meta.url);
 const pkg = JSON.parse(await readFile(new URL('package.json', root), 'utf8'));
@@ -74,28 +72,13 @@ const shadcn = await build({
   entryPoints: [new URL('src/shadcn-runtime.ts', root).pathname],
   bundle: true, write: false, format: 'esm', platform: 'browser', minify: true,
   define: { 'process.env.NODE_ENV': '"production"' }, legalComments: 'inline',
-  plugins: [{
-    name: 'shared-react-runtime',
-    setup(builder) {
-      builder.onResolve({ filter: /^(react|react-dom)(\/.*)?$/ }, ({ path }) => ({ path, namespace: 'shared-react' }));
-      builder.onLoad({ filter: /.*/, namespace: 'shared-react' }, ({ path }) => {
-        if (path === 'react/jsx-runtime' || path === 'react/jsx-dev-runtime') {
-          return { contents: 'export const Fragment = window.React.Fragment; export const jsx = (type, props, key) => window.React.createElement(type, key === undefined ? props : {...props, key}); export const jsxs = jsx; export const jsxDEV = jsx;' };
-        }
-        if (!['react', 'react-dom', 'react-dom/client'].includes(path)) throw new Error(`Unsupported shared React entry: ${path}`);
-        const dom = path !== 'react';
-        const names = Object.keys(dom ? ReactDOM : React).filter(name => /^[a-zA-Z_$][\w$]*$/.test(name) && name !== 'default');
-        if (dom) names.push('createRoot', 'hydrateRoot');
-        return { contents: `export default window.${dom ? 'ReactDOM' : 'React'}; export const {${[...new Set(names)].join(',')}} = window.${dom ? 'ReactDOM' : 'React'};` };
-      });
-    },
-  }],
+  external: ['https://*'],
 });
 const assets = {
   react: react.outputFiles[0].text,
   eficy,
   shadcn: shadcn.outputFiles[0].text,
-  shadcnCSS: await readFile(resolve(packagePath('@eficy/shadcn-ui'), 'dist/index.css'), 'utf8'),
+  shadcnCSS: 'https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.1.3/dist/index.css',
   bootstrap: bootstrap.outputFiles[0].text,
 };
 await mkdir(new URL('src/generated/', root), { recursive: true });

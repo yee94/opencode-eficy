@@ -66,7 +66,10 @@ export default () => <p>import from 'remote' {text}</p>;`)).not.toThrow();
 
   it.each([
     `import x from './local';`,
-    `import x from 'https://example.invalid/x';`,
+    `import x from 'http://example.invalid/x';`,
+    `import x from '//example.invalid/x';`,
+    `import x from 'https://user:password@example.invalid/x';`,
+    `import css from 'https://example.invalid/style.css';`,
     `import x from 'react';`,
     `import 'data:text/javascript,alert(1)';`,
     `import type { X } from '../types';`,
@@ -82,6 +85,18 @@ export default () => <p>import from 'remote' {text}</p>;`)).not.toThrow();
     expect(errorCode('const App = () => <div />;')).toBe('default-export');
     expect(errorCode(`export { default } from './other';`)).toBe('default-export');
     expect(errorCode(`export const App = () => <div />;`)).toBe('default-export');
+  });
+
+  it('accepts browser HTTPS modules and extracts only real side-effect CSS imports', () => {
+    const source = `import { Button } from 'https://cdn.example/ui.js';
+import "https://cdn.example/style.css?v=1";
+const text = 'import "https://cdn.example/inert.css"';
+export default () => <Button>{text}</Button>;`;
+    const result = parseEficy('report.eficy', source);
+    expect(result.imports).toEqual(['https://cdn.example/ui.js', 'https://cdn.example/style.css?v=1']);
+    expect(result.styles).toHaveLength(1);
+    const style = result.styles[0];
+    expect(source.slice(style.start, style.end)).toBe('import "https://cdn.example/style.css?v=1"');
   });
 
   it('reports missing text and wrong extension explicitly', () => {
