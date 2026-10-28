@@ -15,8 +15,8 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "plugins": [
-    "@eficy/opencode2-plugin@0.2.0",
-    "@eficy/opencode2-shadcn@0.1.1"
+    "@eficy/opencode2-plugin@0.2.1",
+    "@eficy/opencode2-shadcn@0.1.2"
   ]
 }
 ```
@@ -70,7 +70,7 @@ pnpm changeset
 pnpm changeset version
 ```
 
-GitHub Actions 使用仓库的 `NPM_TOKEN` Secret 发布公共包并上传 tarball；详见 `.github/workflows/release.yml`。发布前必须构建、类型检查、测试并验证打包安装。`v0.2.0` 是本次多包迁移的发布批次标签，不表示所有包同版。
+GitHub Actions 使用仓库的 `NPM_TOKEN` Secret 发布公共包；后续版本由 `.github/workflows/changesets.yml` 管理，版本变更合入 main 后发布未发布的包并创建各包的 GitHub Release。发布前必须构建、类型检查、测试并验证打包安装。`.github/workflows/release.yml` 仅用于多包迁移的 `v0.2.0` 首次发布及 tarball 上传，该批次标签不表示所有包同版。
 
 ## 边界
 

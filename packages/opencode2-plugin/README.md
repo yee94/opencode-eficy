@@ -9,13 +9,13 @@
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugins": ["@eficy/opencode2-plugin@0.2.0"]
+  "plugins": ["@eficy/opencode2-plugin@0.2.1"]
 }
 ```
 
 配置保存后由 OpenCode 重新加载插件。终端可使用 skill 和校验工具；可视化预览需要支持标准 `./gui-experimental` 入口的 GUI 宿主。GUI API 仍为实验性接口，本版本针对 `@opencode/plugin` 2.2.0 构建。
 
-也可从 [GitHub Releases](https://github.com/yee94/opencode-eficy/releases) 下载 tgz，在本地目录运行 `npm install /path/to/eficy-opencode2-plugin-0.2.0.tgz`，再将安装后的 `node_modules/@eficy/opencode2-plugin` 绝对路径加入全局 `plugins`。
+也可通过 `npm pack @eficy/opencode2-plugin@0.2.1` 下载 tgz，在本地目录运行 `npm install /path/to/eficy-opencode2-plugin-0.2.1.tgz`，再将安装后的 `node_modules/@eficy/opencode2-plugin` 绝对路径加入全局 `plugins`。
 
 ## 本地构建与安装
 

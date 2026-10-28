@@ -1,5 +1,11 @@
 # @eficy/opencode2-plugin
 
+## 0.2.1
+
+### Patch Changes
+
+- 3468111: Keep preview link handlers limited to local files, distinguish GUI icon IDs and mobile labels between plugins, and document standalone/coinstalled routing and persisted-tab behavior.
+
 ## 0.2.0
 
 - 迁入 pnpm/Turbo/Changesets 多包工作区，独立构建与发布。

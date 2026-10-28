@@ -6,7 +6,7 @@ OpenCode 2 的通用 Eficy + shadcn 基础插件，集成 GUI 渲染、skill 注
 
 ## 安装
 
-在连接服务的全局 `opencode.jsonc` 的 `plugins` 中加入 `"@eficy/opencode2-shadcn@0.1.1"`。配置保存后 OpenCode 自动加载；预览需要支持 `./gui-experimental` 的 GUI 宿主。
+在连接服务的全局 `opencode.jsonc` 的 `plugins` 中加入 `"@eficy/opencode2-shadcn@0.1.2"`。配置保存后 OpenCode 自动加载；预览需要支持 `./gui-experimental` 的 GUI 宿主。
 
 ## 使用
 

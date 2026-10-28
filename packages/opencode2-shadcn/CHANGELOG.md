@@ -1,5 +1,11 @@
 # @eficy/opencode2-shadcn
 
+## 0.1.2
+
+### Patch Changes
+
+- 3468111: Keep preview link handlers limited to local files, distinguish GUI icon IDs and mobile labels between plugins, and document standalone/coinstalled routing and persisted-tab behavior.
+
 ## 0.1.1
 
 ### Patch Changes
