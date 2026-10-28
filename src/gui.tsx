@@ -84,7 +84,7 @@ return Plugin.define({
     zh: { preview: `${options.label} 预览`, loading: '正在加载 Eficy 文件…', missing: '找不到 Eficy 文件' },
   },
   setup(ctx) {
-    ctx.add(FileIcon, { id: ctx.id, extensions: [options.extension.slice(1)], svg: fileIcon });
+    ctx.add(FileIcon, { id: ctx.id, extensions: [options.extension.split('.').at(-1)!], svg: fileIcon });
     const View = bindPlugin((props: PanelProps) => createComponent(Preview, mergeProps(props, { version: options.version, theme: options.theme ?? 'light' })));
     const tabs = new Map<string, PanelTab>();
     ctx.add(Style, '.eficy-file-preview{height:100%;min-height:0;display:flex;flex-direction:column;color:inherit}.eficy-file-status{padding:8px 16px;white-space:pre-wrap;overflow-wrap:anywhere}.eficy-file-status[role=alert]{color:var(--status-error,currentColor)}.eficy-file-surface{flex:1;min-height:0;display:flex}.eficy-file-surface>iframe{width:100%;height:100%;min-height:240px;border:0;flex:1}');

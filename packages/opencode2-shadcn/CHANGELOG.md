@@ -1,5 +1,11 @@
 # @eficy/opencode2-shadcn
 
+## 0.1.3
+
+### Patch Changes
+
+- Register the final `eficy` extension for file icons instead of the compound preview suffix. Fixes Yuri rejecting GUI setup with "Invalid GUI file icon extension" while preserving `.shadcn.eficy` preview routing.
+
 ## 0.1.2
 
 ### Patch Changes

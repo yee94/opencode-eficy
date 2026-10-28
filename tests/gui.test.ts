@@ -19,6 +19,12 @@ function host(ids: PluginID[]) {
     plugins[id].setup!({
       id,
       add: (registry: Registry<unknown>, value: unknown) => {
+        if (registry.id === 'yuri.file-icon') {
+          // Yuri indexes the final extension, not a compound preview suffix.
+          for (const extension of (value as { extensions: string[] }).extensions) {
+            if (!/^[a-z0-9][a-z0-9_+-]{0,63}$/.test(extension)) throw new Error('Invalid GUI file icon extension');
+          }
+        }
         entries.push({ plugin: id, registry: registry.id, value });
         return () => {};
       },
@@ -42,6 +48,13 @@ function host(ids: PluginID[]) {
 }
 
 describe('GUI plugin coexistence with OpenCode routing and panel contracts', () => {
+  it('registers the final file extension for compound shadcn preview names', () => {
+    const app = host(['eficy-shadcn']);
+    const icon = app.entries.find(entry => entry.registry === 'yuri.file-icon')!.value as { extensions: string[] };
+    expect(icon.extensions).toEqual(['eficy']);
+    app.click('report.shadcn.eficy');
+    expect(app.tabs()).toEqual(['eficy-shadcn:report.shadcn.eficy']);
+  });
   it.each<PluginID[]>([['eficy', 'eficy-shadcn'], ['eficy-shadcn', 'eficy']])('routes once in loading order %j', (...ids) => {
     const app = host(ids);
     app.click('report.shadcn.eficy');
