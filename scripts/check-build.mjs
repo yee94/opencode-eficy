@@ -20,6 +20,7 @@ export async function checkBuild(directory) {
   const notices = await Promise.all([
     ['react', 'LICENSE'], ['react-dom', 'LICENSE'], ['sucrase', 'LICENSE'],
     ['recharts', 'LICENSE'],
+    ['html-to-image', 'LICENSE'],
     ['@eficy/browser', 'dist/standalone.js.LICENSE.txt'],
     ['@eficy/shadcn-ui', 'dist/index.js.LICENSE.txt'],
   ].map(async ([name, file]) => `--- ${name}/${file} ---\n${await readFile(resolve(packagePath(name), file), 'utf8')}`));

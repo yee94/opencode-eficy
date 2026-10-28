@@ -6,12 +6,12 @@
 
 ## 安装
 
-`0.2.0` 支持 HTTPS 模块与 CSS 导入。已有安装可在连接服务的全局 `opencode.json(c)` 中更新包版本，保留其他配置；新安装参见[通用包说明](../opencode2-plugin/README.md)：
+`0.3.0` 支持 HTTPS 模块与 CSS 导入，以及按客户端能力提供的 PDF/长图导出。已有安装可在连接服务的全局 `opencode.json(c)` 中更新包版本，保留其他配置；新安装参见[通用包说明](../opencode2-plugin/README.md)：
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugins": ["@eficy/opencode2-shadcn@0.2.0"]
+  "plugins": ["@eficy/opencode2-shadcn@0.3.0"]
 }
 ```
 
@@ -42,8 +42,14 @@ import { ResponsiveContainer, AreaChart, Area, XAxis, CartesianGrid, Tooltip } f
 
 内置 `eficy` 提供 Signals；远程库使用浏览器 ESM 与固定版本 URL。React 库的 external 参数保留宿主共享实例。图表容器需明确高度；Tooltip/Legend 从与图表相同的 Recharts URL 导入。上游 UI 模块没有 `ui.Recharts`；该接口只为旧裸 `shadcn` 导入兼容保留。
 
+旧裸导入的 `ui.Lucide` 直接保留上游 UI 已有命名空间，`ui.ChartTooltip` / `ui.ChartLegend` 则使用与 `ui.Recharts` 同一远程模块的组件。旧报告无需改写这些调用；兼容模块的求值和依赖加载不影响仅使用直连 HTTPS 导入的新文件。
+
 React/Eficy 随 GUI 发布，组件、CSS、图标与图表由客户端直接从 HTTPS 加载，首次使用需要网络。源码在本地编译，校验器不执行源码或访问 CDN。iframe 不提供 Node、父页面或本地跨文件模块访问。
 
 与通用插件同时安装时本兼容包优先处理 `.eficy`，旧 `.shadcn.eficy` 也只按最后一层后缀识别。工具名、skill 名和插件 ID 保持独立；新安装不必双装。
+
+PDF/PNG 导出与通用包共用两个独立 Yuri 客户端 GSAPI：`yuri.exportPDF`、`yuri.exportLongImage`。使用官方 `Contract.define` / `ctx.use`，仅显示处于 `active` 的 v1 能力对应按钮；都不可用时隐藏工具栏。能力取决于当前设备的原生实现，与本地/远端/LAN/Relay 服务连接无关。插件没有 main/Electron 代码，移动壳安装对应原生实现后也可提供能力。
+
+iframe 将当前交互状态、样式、字体和 canvas 数据捕获为自包含 `{ html, width, height }`，调用对应方法并传入 `filename`、`signal`、`onProgress`；PDF 当前使用 A4，契约也允许 Letter。准备、快照和原生渲染/编码/保存均显示真实阶段，有有效总量才显示百分比。保存返回 `saved`，取消返回 `cancelled`，`EXPORT_*` 错误可重试。对应能力撤销、generation 替换或关闭预览会取消任务；恢复能力不重挂 iframe。完整契约和限制见[通用包导出说明](../opencode2-plugin/README.md#导出报告)。
 
 开发、构建和发布从[仓库根目录](../../README.md)运行 pnpm workspace 命令。

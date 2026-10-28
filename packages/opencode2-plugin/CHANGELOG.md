@@ -1,5 +1,15 @@
 # @eficy/opencode2-plugin
 
+## 0.4.0
+
+### Minor Changes
+
+- Add PDF and full-page PNG export through the independent Yuri client GSAPIs, with self-contained live-view HTML snapshots, per-format capability lifetimes, native progress and cancellation. Both packages use window contracts without plugin main/Electron code.
+
+  Keep the centered SVG loading indicator visible through file reads, runtime startup, dependency loading and content commit, with explicit errors and retry. Preserve legacy shadcn Recharts namespaces and interactive report state.
+
+  Export requires a Yuri client providing `yuri.exportPDF` or `yuri.exportLongImage`. Older clients and unsupported containers retain previews and hide unavailable export actions.
+
 ## 0.3.0
 
 ### Minor Changes

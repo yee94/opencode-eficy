@@ -9,13 +9,13 @@ Eficy 使用一种 `.eficy` 文件格式。通用 OpenCode 2 插件提供服务�
 
 ## 安装
 
-新安装只需通用包 `@eficy/opencode2-plugin@0.3.0`，此版本支持 HTTPS 导入。将 npm 包加入连接服务的全局 `opencode.jsonc`，保留已有配置：
+新安装只需通用包 `@eficy/opencode2-plugin@0.4.0`，此版本支持 HTTPS 导入和按客户端能力提供的 PDF/长图导出。将 npm 包加入连接服务的全局 `opencode.jsonc`，保留已有配置：
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
   "plugins": [
-    "@eficy/opencode2-plugin@0.3.0"
+    "@eficy/opencode2-plugin@0.4.0"
   ]
 }
 ```
@@ -24,7 +24,7 @@ Eficy 使用一种 `.eficy` 文件格式。通用 OpenCode 2 插件提供服务�
 
 ### 单装与双装
 
-只看最后一层后缀；`report.eficy` 与 `report.shadcn.eficy` 属于同一文件格式。旧 shadcn 包保留作为兼容入口，已有安装可更新到 `@eficy/opencode2-shadcn@0.2.0`；新用户不必双装。
+只看最后一层后缀；`report.eficy` 与 `report.shadcn.eficy` 属于同一文件格式。旧 shadcn 包保留作为兼容入口，已有安装可更新到 `@eficy/opencode2-shadcn@0.3.0`；新用户不必双装。
 
 | 安装方式 | 普通 `.eficy` | `.shadcn.eficy` |
 | --- | --- | --- |
@@ -43,6 +43,14 @@ Eficy 使用一种 `.eficy` 文件格式。通用 OpenCode 2 插件提供服务�
 通用 `eficy` skill 包含 shadcn/图表的 HTTPS 导入说明和报告规范。兼容包仍提供 `eficy_shadcn_template` 与 `eficy_shadcn_validate`。源码、数据、状态留在一个文件中，本地编译；React/Eficy 内置，外部组件和 CSS 按固定版本 URL 在客户端加载。
 
 ## 开发结构
+
+### 客户端导出
+
+两个包统一使用 Yuri 的独立 GSAPI `yuri.exportPDF` / `yuri.exportLongImage`，通过官方 `Contract.define` / `ctx.use` 获取当前设备的 v1 活动能力。各格式独立显示，全部不可用时隐藏工具栏；本地、远端和 Relay 连接使用相同判断。插件不含 main/Electron 导出代码。iframe 生成保留实时交互状态的自包含 HTML 快照，宿主负责原生 PDF/PNG 生成和保存。
+
+公开结构类型位于 `src/export-types.ts`，token 位于 `src/export-contract.ts`，不跨仓库导入。输入包含 `snapshot: { html, width, height }` 与 `filename`，PDF 支持 A4/Letter；选项包含 `signal` / `onProgress`，结果为 `saved` 或 `cancelled`，失败携带 `EXPORT_*` code。能力撤销/替换时取消对应任务，恢复后继续使用原 iframe。真实阶段及有总量的进度显示见[完整说明](packages/opencode2-plugin/README.md#导出报告)。
+
+### 目录
 
 ```text
 packages/opencode2-plugin/  通用包入口、技能、样例和发布元数据
@@ -63,6 +71,8 @@ pnpm test
 ```
 
 内置运行时依赖版本由根 manifest 和锁文件控制；每个发布包独立维护版本并生成 `dist/runtime-manifest.json`。文件中的 HTTPS URL 决定外部组件版本，更新组件不必新增插件或后缀。更新共享运行时后为受影响的公共包都创建 changeset。
+
+导出回归覆盖两个契约的格式独立、generation 过期、撤销/取消/恢复、失败重试、快照资源及表单状态、进度总量与两个包的无 main 入口。`pnpm build` 同时更新内联运行时和两个包的 GUI 产物；自动测试不代表 Electron/iOS/Android 的原生保存实机验收。
 
 ```sh
 pnpm changeset

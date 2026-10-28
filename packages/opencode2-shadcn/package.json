@@ -1,6 +1,6 @@
 {
   "name": "@eficy/opencode2-shadcn",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Eficy + shadcn GUI previews, skills and tools for interactive pages and reports in OpenCode 2",
   "type": "module",
   "license": "MIT",

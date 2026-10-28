@@ -4,12 +4,12 @@
 
 ## 安装（OpenCode 2）
 
-`0.3.0` 支持 HTTPS 模块与 CSS 导入。在连接服务的全局 `opencode.json(c)` 中加入 npm 包，保留已有配置：
+`0.4.0` 支持 HTTPS 模块与 CSS 导入，以及按客户端能力提供的 PDF/长图导出。在连接服务的全局 `opencode.json(c)` 中加入 npm 包，保留已有配置：
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugins": ["@eficy/opencode2-plugin@0.3.0"]
+  "plugins": ["@eficy/opencode2-plugin@0.4.0"]
 }
 ```
 
@@ -47,7 +47,29 @@ pnpm test
 
 `.eficy` 是单文件纯 TSX，直接默认导出一个 React 组件。支持静态 `eficy` 与 HTTPS ESM/CSS 导入，旧 `shadcn` 裸导入保留兼容。只看最后一层后缀；旧 `report.shadcn.eficy` 同样可打开。完整 Signals 示例见 [`skills/eficy/SKILL.md`](skills/eficy/SKILL.md)。保存后点击文件链接或文件树，在现有文件标签页内预览。
 
+旧 `import * as ui from 'shadcn'` 通过独立的薄适配模块保留 `ui.Recharts` 与 `ui.Lucide`：Recharts 固定到 `2.15.4` 的 HTTPS ESM，并 external React/ReactDOM 以复用 frame import map；Lucide、ChartContainer 和 ChartTooltipContent 沿用固定 `@eficy/shadcn-ui@1.1.3` 的导出。ChartTooltip/ChartLegend 与 `ui.Recharts` 来自同一模块，避免图表上下文分裂。该适配模块只在文件导入裸 `shadcn` 时求值；直接 HTTPS 导入的新文件不会因此额外加载旧兼容依赖。
+
 源码变化会重新求值模块，模块级 Signal 状态可能重置；同内容更新不应重载。预览状态不是持久数据。文件读取失败、语法或渲染失败必须显示错误；真实浏览器保存更新、交互和恢复流程由集成验收确认。
+
+Panel 创建时立即在外层真实 DOM 显示居中的 SVG 与提示，覆盖文件读取、iframe 启动、源码编译和 HTTPS 组件/样式加载，直到当前版本内容实际提交。首次加载提示只显示在居中画面，顶部状态区用于文件错误和重试。SVG/样式与 iframe 自带加载画面共用，独立使用 frame 时仍有加载提示。文案沿用宿主 `ctx.t` 的语言，动画遵循 `prefers-reduced-motion`。
+
+iframe 在外层占位获得绘制机会后才创建；等待期间使用 `visibility:hidden` 保留实际尺寸，不使用 `display:none`。外层依据经过 source、frameId 与 revision 校验的 `status` 消息收起加载画面；iframe 的 `load`、runtime 的 `ready` 和导出的 `render-state` 都不是内容就绪信号。首次内容提交前不展示内部初始化占位，已有内容在后台更新期间保持可交互。文件错误显示外层重试；启动、依赖和渲染错误解除遮挡并显示 iframe 内错误与重试。重试重建文档、分配新 frameId 并重新发送最新源码，旧文档消息、过期 revision 和已关闭 Panel 的异步结果不能影响新加载。
+
+当前版本提交时，在用户组件的 layout effect 之前启用样式并解除根节点隐藏，保证首次布局测量有效；同次提交的 layout effect 收起加载画面。加载画面采用独立固定定位，不参与内容布局，也不覆盖已有可交互内容。
+
+### 加载回归与阶段注入
+
+运行 `pnpm build && pnpm typecheck` 后，用 `pnpm exec vitest run tests/preview-loading.test.ts tests/bootstrap-loading.test.ts tests/frame.test.ts tests/frame-runtime.test.ts tests/gui.test.ts` 验证 Panel、父子消息边界和真实 runtime；bootstrap 用例执行生成的内联运行时，避免只测源码而漏掉旧构建产物。
+
+浏览器夹具可独立控制以下边界，无需改原报告或添加生产开关：
+
+- 文件：在宿主 `file.sync`/`readFile` 返回一个可手动 resolve/reject 的 Promise；等待期间外层 SVG 可见、顶部无重复加载文字。reject 后应看到错误与重试。
+- 启动：暂存 iframe 的 `srcdoc` setter 写入，释放时调用原 setter；期间 iframe 隐藏但宽高非零。收到 `ready` 后 SVG 仍须可见。
+- 依赖/模块：仅给夹具读取到的源码前置一个等待消息的顶层 Promise；释放前保持加载，释放后等待 `status:committed`，不能以 `render-state` 或 `ready` 提前结束。
+- CSS/渲染：在浏览器网络层暂存样式响应，或用测试组件抛出可控 Suspense Promise；错误响应/渲染异常必须露出错误与重试，成功 layout commit 才收起加载。
+- 更新/取消：第一次提交后再次阻塞模块，旧按钮仍应可点击；等待期间关闭或切换文件，再释放旧 Promise，不得改变新 Panel。
+
+生产 GUI 产物分别为 `packages/opencode2-plugin/dist/gui-experimental.cjs` 和 `packages/opencode2-shadcn/dist/gui-experimental.cjs`。共享 runtime 与两份 GUI 必须同次构建，正在修改期间的中间产物不用于验收。
 
 页面内的 `<a href>` 本地文件链接通过标准 `ctx.links.open` 交给宿主：支持绝对路径、`file://` URL 和相对当前文件目录的路径，继续在文件标签页中渲染。消息中的文件链接也进入同一文件预览链路。iframe 不自行跳转到本地路径；文件不存在或当前服务无权访问时按宿主文件错误显示。
 
@@ -60,6 +82,18 @@ pnpm test
 静态校验不是类型检查或安全沙箱，也不能证明默认导出值可渲染。源码在客户端编译并在隔离 iframe 运行，不发送到 CDN；网络用于获取外部资源。iframe 权限、CSP、消息来源校验和资源清理由 frame 承担，不授予父页 DOM、宿主 SDK 或 Node API 能力。首次加载需要网络及资源端 CORS 支持，浏览器缓存不等于完整离线保证。
 
 iframe 采用 `allow-scripts allow-forms`，不授予 same-origin 权限。`allow-forms` 让 React 的 `onSubmit` 可以收到原生表单事件，CSP 的 `form-action 'none'` 仍禁止网络表单提交。消息通过 source 与独立 frameId 校验；opaque origin 的首次握手只能使用通配目标，不传递宿主凭据。
+
+## 导出报告
+
+预览顶部的「导出」支持 PDF 和 PNG 长图，保留当前页面的筛选、输入和展开状态，并可取消。通过官方 `Contract.define` / `ctx.use` 分别消费 Yuri 的两个客户端 GSAPI：`yuri.exportPDF` 和 `yuri.exportLongImage`。插件只有窗口 setup，原生渲染和保存由当前设备的宿主实现。
+
+每个契约独立判断 `active` 且 `value.version === 1`：仅支持一种格式时只显示对应按钮；两者都不可用时隐藏整个工具栏。能力属于当前客户端设备，与连接本地、远端、LAN 或 Relay 服务无关。Electron 或安装了对应原生实现的移动壳可提供能力；纯浏览器、VS Code、旧壳及其他未提供能力的宿主隐藏入口。能力撤销/替换取消对应格式的任务；另一格式变化不打断当前任务。快照开始与调用原生保存前重新检查对应能力及 generation，关闭预览或内容更新也会取消任务。能力恢复不会重挂 iframe 或丢失交互状态。
+
+结构类型在 `src/export-types.ts` 中维护，契约声明在 `src/export-contract.ts`，两个独立发布包共用实现。公开输入为 `{ snapshot: { html, width, height }, filename }`；PDF 另有可选 `pageSize: 'a4' | 'letter'`，当前按钮使用 A4。每个能力提供 `version: 1`、各自的 `limits` 和各自的方法 `exportPDF` / `exportLongImage`，调用选项为 `{ signal, onProgress }`。插件按能力限制检查 HTML UTF-8 字节、宽高和像素总数；宿主仍独立执行资源及安全校验。
+
+快照在 iframe 内通过 `html-to-image` 收集 DOM、计算样式、字体和图片（含 canvas 数据），将 SVG 的 foreignObject 内容转换为静态自包含 HTML，补齐序列化后的表单状态，再交给宿主。宿主原生导出页禁用脚本、外部网络和导航。插件不执行报告源码的第二次渲染，不生成最终 PDF/PNG，也不进行浏览器下载。
+
+iframe 显示真实的资源准备和快照阶段；原生 `onProgress` 直接显示 `preparing`、`rendering`、`encoding`、`saving`。仅当存在有效 `completed` 与正数 `total` 时显示确定进度/百分比，其余阶段不估算。方法完成返回 `{ status: 'saved' | 'cancelled' }`，以原生终态为准：保存已经提交后收到取消请求仍显示已保存，原生确认取消才显示取消；已销毁工具栏不更新终态。失败 reject 携带 `EXPORT_*` code；`EXPORT_ABORTED` 显示取消，其他错误通过官方 `{{error}}` 插值展示并可重试。取消后的迟到进度不更新界面。
 
 ## 文件类型图标
 
@@ -90,6 +124,8 @@ ctx.add(FileIcon, { id: 'eficy', extensions: ['eficy'], svg: fileIcon });
 ## 验证范围
 
 `tests/parser.test.ts` 覆盖真实语法、默认导出、导入策略、字节边界、文档标签与 skill 示例；`tests/server.test.ts` 使用真实 SDK 定义执行 skill/tool transforms，检查 manifest 注入和工具错误结果。先构建运行时，再运行测试。
+
+`tests/legacy-report.test.ts` 使用真实内置 Eficy 编译器、上游 UI 与 Recharts，在 happy-dom 执行旧报告消费者，覆盖两个命名空间、嵌套 computed、component/batch 交互、ChartContainer 图形和 Tooltip 内容。测试只在模块解析边界用本机已安装的同版本库替代 HTTPS，布局尺寸由测试提供；CDN、import map 和实际布局仍需浏览器验收。可用 `EFICY_LEGACY_REPORT=/path/to/KF-ITERATION-REPORT.shadcn.eficy pnpm exec vitest run tests/legacy-report.test.ts` 直接运行原报告，文件按原文读取，验证四张图表与展开交互；未提供路径时跳过这一外部文件用例。
 
 自动测试不能替代浏览器验收。实际宿主应检查：文件链接与侧边文件树打开后的预览、Signals 交互、HTTPS 模块/CSS 加载、源码更新、错误与修复、跨文件/会话隔离和关闭清理。外部依赖断网或 404 时须显示可恢复错误，不承诺离线可用。
 

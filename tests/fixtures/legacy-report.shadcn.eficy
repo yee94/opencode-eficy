@@ -1,0 +1,47 @@
+import { signal, computed, component, batch } from 'eficy';
+import * as ui from 'shadcn';
+
+// Reduced from the legacy report's namespace, Signals, and chart call sites.
+const { Card, CardContent, Button, ChartContainer, ChartTooltip, ChartTooltipContent } = ui;
+const { AreaChart, Area, BarChart, Bar, CartesianGrid, XAxis, YAxis } = ui.Recharts;
+const { ArrowUpRight, CheckCircle2, XCircle, AlertTriangle, FlaskConical, ShieldAlert, Activity } = ui.Lucide;
+const sections = [{ id: 'methods', title: 'Methods' }, { id: 'guard', title: 'Guard' }];
+const focus = signal('all');
+const expanded = signal('methods');
+const visibleSections = computed(() => focus.value === 'all' ? sections : sections.filter(s => s.id === focus.value));
+const totals = computed(() => sections.length);
+const ratio = computed(() => 100 / totals.value);
+const config = { pass: { label: 'Passed', color: '#3b82f6' } };
+const data = [{ batch: 'A', pass: 10 }, { batch: 'B', pass: 20 }];
+
+const SectionList = component(() => <section aria-label="Sections">
+  {visibleSections.value.map(item => {
+    const open = expanded.value === item.id;
+    return <Card key={item.id}><CardContent>
+      <button type="button" aria-expanded={open} onClick={() => { expanded.value = open ? '' : item.id; }}>{item.title}</button>
+      {open && <p>{item.title} details</p>}
+    </CardContent></Card>;
+  })}
+</section>);
+
+export default component(() => <main>
+  <h1>Legacy report</h1>
+  <output>{totals.value} sections · {ratio.value}%</output>
+  <div aria-label="Icons">{[ArrowUpRight, CheckCircle2, XCircle, AlertTriangle, FlaskConical, ShieldAlert, Activity].map((Icon, i) => <Icon key={i} />)}</div>
+  <Button onClick={() => batch(() => { focus.value = 'guard'; expanded.value = 'guard'; })}>Focus Guard</Button>
+  <SectionList />
+  <ChartContainer id="legacy-area" config={config} style={{ height: 240, width: '100%', minWidth: 0 }}>
+    <AreaChart data={data} margin={{ top: 10, right: 6, bottom: 0, left: -22 }}>
+      <CartesianGrid vertical={false} /><XAxis dataKey="batch" /><YAxis />
+      <ChartTooltip content={<ChartTooltipContent />} />
+      <Area dataKey="pass" stroke="#3b82f6" isAnimationActive={false} />
+    </AreaChart>
+  </ChartContainer>
+  <ChartContainer id="legacy-bar" config={config} style={{ height: 200, width: '100%', minWidth: 0 }}>
+    <BarChart data={data}>
+      <XAxis dataKey="batch" /><YAxis />
+      <ChartTooltip content={<ChartTooltipContent />} />
+      <Bar dataKey="pass" fill="#3b82f6" isAnimationActive={false} />
+    </BarChart>
+  </ChartContainer>
+</main>);

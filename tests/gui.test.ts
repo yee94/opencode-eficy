@@ -48,6 +48,10 @@ function host(ids: PluginID[]) {
 }
 
 describe('GUI plugin coexistence with OpenCode routing and panel contracts', () => {
+  it('ships both standalone packages without a plugin main entry', () => {
+    expect(generic.main).toBeUndefined();
+    expect(shadcn.main).toBeUndefined();
+  });
   it('registers the final file extension for compound shadcn preview names', () => {
     const app = host(['eficy-shadcn']);
     const icon = app.entries.find(entry => entry.registry === 'yuri.file-icon')!.value as { extensions: string[] };

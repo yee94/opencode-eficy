@@ -2,6 +2,7 @@ import type * as ReactTypes from 'react';
 import type { Root } from 'react-dom/client';
 import { parseEficy } from './parser';
 import { isLocalFileLink } from './file-links';
+import type { ExportProgress } from './export-types';
 
 interface EficyRuntime {
   initEficy(options: { components: Record<string, unknown> }): Promise<unknown>;
@@ -12,6 +13,8 @@ interface EficyRuntime {
 // This entry is built separately into inert text; it executes only inside srcdoc.
 const payload = JSON.parse(document.getElementById('eficy-payload')!.textContent!) as {
   frameId: string; nonce: string; theme?: 'light' | 'dark'; eficy: string; shadcn: string; shadcnCSS: string;
+  loadingText: { initial: string; compiling: string; dependencies: string; rendering: string; detail: string };
+  snapshot: string;
 };
 document.getElementById('eficy-payload')!.remove();
 document.documentElement.classList.toggle('dark', payload.theme === 'dark');
@@ -19,32 +22,58 @@ document.documentElement.style.colorScheme = payload.theme === 'dark' ? 'dark' :
 const React = (window as unknown as { React: typeof ReactTypes }).React;
 const ReactDOM = (window as unknown as { ReactDOM: { createRoot(element: HTMLElement): Root; flushSync(callback: () => void): void } }).ReactDOM;
 const errorElement = document.getElementById('eficy-error')!;
+const rootElement = document.getElementById('eficy-root')!;
+const loadingElement = document.getElementById('eficy-loading')!;
+const loadingTitle = document.getElementById('eficy-loading-title')!;
+const loadingDetail = document.getElementById('eficy-loading-detail')!;
 const retry = document.createElement('button');
 retry.textContent = 'Retry / 重试';
 retry.hidden = true;
 errorElement.after(retry);
-retry.onclick = () => notify('retry');
+retry.onclick = () => {
+  hasContent = false;
+  rootElement.hidden = true;
+  errorElement.hidden = true;
+  retry.hidden = true;
+  showLoading(payload.loadingText.initial);
+  notify('retry');
+};
 const urls = new Set<string>();
 let root: Root | undefined;
 let disposed = false;
 let revision = 0;
 let previousSource: string | undefined;
 let successfulSource: string | undefined;
+let hasContent = false;
 let activeStyles: HTMLLinkElement[] = [];
+let snapshotJob: { id: string; controller: AbortController } | undefined;
+let snapshotModule: Promise<typeof import('./export-snapshot')> | undefined;
 const pendingStyles = new Set<() => void>();
 const pendingSheets = new Set<HTMLLinkElement>();
 let Eficy: EficyRuntime;
 let core: unknown;
 const css = document.createElement('style');
 document.head.append(css);
-const notify = (type: string) => parent.postMessage({ protocol: 'eficy-preview', frameId: payload.frameId, type }, '*');
+const notify = (type: string, detail: Record<string, unknown> = {}) => parent.postMessage({ protocol: 'eficy-preview', frameId: payload.frameId, type, ...detail }, '*');
+const showLoading = (title: string) => {
+  loadingTitle.textContent = title;
+  loadingDetail.textContent = payload.loadingText.detail;
+  loadingElement.hidden = hasContent;
+  rootElement.setAttribute('aria-busy', 'true');
+  notify('status', { revision, status: 'loading', title });
+};
 const showError = (error: unknown) => {
+  loadingElement.hidden = true;
+  rootElement.setAttribute('aria-busy', 'false');
   errorElement.textContent = error instanceof Error ? error.message : String(error);
   errorElement.hidden = false;
   retry.hidden = false;
+  notify('status', { revision, status: 'error', error: errorElement.textContent, hasContent });
 };
 const onError = (event: ErrorEvent) => showError(event.error ?? event.message);
 const onRejection = (event: PromiseRejectionEvent) => showError(event.reason);
+window.addEventListener('error', onError);
+window.addEventListener('unhandledrejection', onRejection);
 const onFileLink = (event: MouseEvent) => {
   if (event.defaultPrevented || event.button !== 0) return;
   const anchor = event.composedPath().find((node): node is HTMLAnchorElement => node instanceof HTMLAnchorElement && node.hasAttribute('href'));
@@ -59,11 +88,49 @@ const blob = (text: string) => {
   return url;
 };
 const revoke = (url: string) => { URL.revokeObjectURL(url); urls.delete(url); };
+async function snapshotPreview(id: string) {
+  if (snapshotJob || !hasContent || rootElement.getAttribute('aria-busy') === 'true' || !errorElement.hidden) {
+    notify('snapshot-error', { requestId: id, error: 'Wait for the preview to finish rendering before exporting.' });
+    return;
+  }
+  const controller = new AbortController();
+  snapshotJob = { id, controller };
+  try {
+    if (!snapshotModule) {
+      const url = blob(payload.snapshot);
+      snapshotModule = import(/* @vite-ignore */ url).finally(() => revoke(url));
+    }
+    const module = await snapshotModule;
+    controller.signal.throwIfAborted();
+    const snapshot = await module.captureSnapshot(rootElement, (value: ExportProgress) => {
+      if (!controller.signal.aborted) notify('snapshot-progress', { requestId: id, ...value });
+    }, controller.signal);
+    controller.signal.throwIfAborted();
+    notify('snapshot-result', { requestId: id, snapshot });
+  } catch (error) {
+    // Failed resource embeds must not poison a subsequent retry's cache.
+    snapshotModule = undefined;
+    if (!controller.signal.aborted) notify('snapshot-error', { requestId: id, error: error instanceof Error ? error.message : String(error) });
+  } finally {
+    if (snapshotJob?.id === id) snapshotJob = undefined;
+  }
+}
 class RenderBoundary extends React.Component<{ children?: ReactTypes.ReactNode; revision: number }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() { return { failed: true }; }
-  componentDidCatch(error: Error) { if (this.props.revision === revision) showError(error); }
+  componentDidCatch(error: Error) {
+    if (!disposed && this.props.revision === revision) {
+      hasContent = false;
+      rootElement.hidden = true;
+      showError(error);
+    }
+  }
   render() { return this.state.failed ? null : this.props.children; }
+}
+function ContentCommit({ children, onPrepare, onCommit }: { children?: ReactTypes.ReactNode; onPrepare: () => void; onCommit: () => void }) {
+  React.useInsertionEffect(onPrepare, [onPrepare]);
+  React.useLayoutEffect(onCommit, [onCommit]);
+  return children;
 }
 async function update(source: string, current: number) {
   const links: HTMLLinkElement[] = [];
@@ -75,6 +142,7 @@ async function update(source: string, current: number) {
     for (const style of [...parsed.styles].reverse()) compileSource = compileSource.slice(0, style.start) + compileSource.slice(style.end);
     const compiled = await Eficy.compileJSXWithCSS(compileSource);
     if (disposed || current !== revision) return;
+    showLoading(payload.loadingText.dependencies);
     const styles = [...new Set([...parsed.styles.map(style => style.url), ...(parsed.imports.includes('shadcn') ? [payload.shadcnCSS] : [])])];
     await Promise.all(styles.map(href => new Promise<void>((resolve, reject) => {
       const link = document.createElement('link');
@@ -107,19 +175,36 @@ async function update(source: string, current: number) {
       if (typeof Component !== 'function' && !(Component && typeof Component === 'object' && '$$typeof' in Component)) {
         throw new Error('The .eficy module must default-export a React component.');
       }
-      errorElement.hidden = true;
-      errorElement.textContent = '';
-      retry.hidden = true;
-      activeStyles.forEach(link => link.remove());
-      activeStyles = links;
-      links.forEach(link => { pendingSheets.delete(link); link.media = 'all'; });
+      showLoading(payload.loadingText.rendering);
       committed = true;
-      successfulSource = source;
-      css.textContent = compiled.css;
-      document.head.append(css);
-      ReactDOM.flushSync(() => root!.render(
-        React.createElement(RenderBoundary, { key: current, revision: current },
-          React.createElement(Eficy.EficyProvider, { core }, React.createElement(Component))),
+      let contentCommitted = false;
+      const onPrepare = () => {
+        if (disposed || current !== revision || contentCommitted) return;
+        // Enable layout before descendant layout effects measure the committed tree.
+        activeStyles.forEach(link => link.remove());
+        activeStyles = links;
+        links.forEach(link => { pendingSheets.delete(link); link.media = 'all'; });
+        css.textContent = compiled.css;
+        document.head.append(css);
+        rootElement.hidden = false;
+      };
+      const onCommit = () => {
+        if (disposed || current !== revision || contentCommitted) return;
+        contentCommitted = true;
+        successfulSource = source;
+        hasContent = true;
+        rootElement.setAttribute('aria-busy', 'false');
+        loadingElement.hidden = true;
+        errorElement.hidden = true;
+        errorElement.textContent = '';
+        retry.hidden = true;
+        notify('status', { revision: current, status: 'committed' });
+      };
+      React.startTransition(() => root!.render(
+        React.createElement(React.Suspense, { fallback: null },
+          React.createElement(RenderBoundary, { key: current, revision: current },
+            React.createElement(Eficy.EficyProvider, { core },
+              React.createElement(ContentCommit, { onPrepare, onCommit }, React.createElement(Component))))),
       ));
     } finally { revoke(url); }
   } catch (error) {
@@ -132,7 +217,10 @@ async function update(source: string, current: number) {
 function cleanup() {
   if (disposed) return;
   disposed = true;
+  snapshotJob?.controller.abort();
   revision++;
+  loadingElement.hidden = true;
+  rootElement.setAttribute('aria-busy', 'false');
   window.removeEventListener('message', receive);
   window.removeEventListener('error', onError);
   window.removeEventListener('unhandledrejection', onRejection);
@@ -152,17 +240,25 @@ function receive(event: MessageEvent) {
   if (!data || data.protocol !== 'eficy-preview' || data.frameId !== payload.frameId) return;
   if (data.type === 'dispose') { cleanup(); notify('disposed'); return; }
   if (data.type === 'link-error' && typeof data.error === 'string') { showError(data.error); return; }
+  if (data.type === 'snapshot-cancel' && data.requestId === snapshotJob?.id) { snapshotJob?.controller.abort(); return; }
+  if (data.type === 'snapshot' && typeof data.requestId === 'string' && data.revision === revision) {
+    void snapshotPreview(data.requestId);
+    return;
+  }
   if (data.type !== 'update' || typeof data.source !== 'string' || !Number.isSafeInteger(data.revision) || data.revision <= revision) return;
   if (data.source === previousSource && data.source === successfulSource && errorElement.hidden) return;
   revision = data.revision;
+  snapshotJob?.controller.abort();
   for (const cancel of pendingStyles) cancel();
   for (const link of pendingSheets) link.remove();
   pendingSheets.clear();
   previousSource = data.source;
+  errorElement.hidden = true;
+  errorElement.textContent = '';
+  retry.hidden = true;
+  showLoading(payload.loadingText.compiling);
   void update(data.source, revision);
 }
-window.addEventListener('error', onError);
-window.addEventListener('unhandledrejection', onRejection);
 window.addEventListener('pagehide', cleanup);
 document.addEventListener('click', onFileLink);
 void (async () => {
@@ -182,7 +278,7 @@ void (async () => {
     if (disposed) return;
     core = await Eficy.initEficy({ components: {} });
     if (disposed) return;
-    root = ReactDOM.createRoot(document.getElementById('eficy-root')!);
+    root = ReactDOM.createRoot(rootElement);
     window.addEventListener('message', receive);
     notify('ready');
   } catch (error) { if (!disposed) showError(error); }

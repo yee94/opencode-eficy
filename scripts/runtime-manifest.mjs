@@ -1,4 +1,4 @@
-const runtimePackages = ['@eficy/browser', '@eficy/shadcn-ui', 'react', 'react-dom', 'recharts', 'sucrase'];
+const runtimePackages = ['@eficy/browser', '@eficy/shadcn-ui', 'react', 'react-dom', 'recharts', 'sucrase', 'html-to-image'];
 
 /** @param {{dependencies?: Record<string, string>, devDependencies?: Record<string, string>}} pkg */
 export function runtimeManifest(pkg) {
