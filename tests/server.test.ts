@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, it } from 'vitest';
-import plugin from '../src/index';
+import plugin from '../packages/opencode2-plugin/src/index';
 
 it('registers and executes the real SDK transforms, injecting built runtime versions', async () => {
   const skills: { id: string; name: string; path: string; content: string }[] = [];
@@ -17,7 +17,7 @@ it('registers and executes the real SDK transforms, injecting built runtime vers
   expect(skills[0]).toMatchObject({ id: 'eficy', name: 'eficy' });
   expect(readFileSync(skills[0].path, 'utf8')).toContain('{{RUNTIME_VERSIONS}}');
   expect(skills[0].content).not.toContain('{{RUNTIME_VERSIONS}}');
-  const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+  const root = join(dirname(fileURLToPath(import.meta.url)), '../packages/opencode2-plugin');
   const manifest = JSON.parse(readFileSync(join(root, 'dist/runtime-manifest.json'), 'utf8'));
   expect(skills[0].content).toContain(`插件版本：${manifest.pluginVersion}`);
   for (const [name, version] of Object.entries(manifest.packages)) expect(skills[0].content).toContain(`${name}: ${version}`);

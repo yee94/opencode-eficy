@@ -15,11 +15,11 @@ afterAll(() => {
 });
 
 describe('bundled official standalone', () => {
-  it('derives embedded versions from the plugin package and follows version updates', () => {
+  it('derives shared runtime versions independently of plugin versions', () => {
     expect(assets.manifest).toEqual(runtimeManifest(pkg));
-    const updated = { ...pkg, version: '0.2.0', devDependencies: { ...pkg.devDependencies, '@eficy/browser': '1.3.0' } };
+    const updated = { ...pkg, devDependencies: { ...pkg.devDependencies, '@eficy/browser': '1.3.0' } };
     const manifest = runtimeManifest(updated);
-    expect(manifest.pluginVersion).toBe('0.2.0');
+    expect(manifest).not.toHaveProperty('pluginVersion');
     expect(manifest.packages['@eficy/browser']).toBe('1.3.0');
     expect(manifest.packages.sucrase).toBe(pkg.dependencies.sucrase);
     expect(() => runtimeManifest({ ...pkg, devDependencies: { ...pkg.devDependencies, '@eficy/browser': '^1.2.4' } })).toThrow('exact version');
@@ -41,6 +41,11 @@ describe('bundled official standalone', () => {
   it('loads the pinned shadcn module with the same isolated React 18 instance', async () => {
     const shadcn = await loadModule(url(assets.shadcn));
     expect(shadcn.Button).toBeTruthy();
+    for (const name of ['ChartContainer', 'ChartTooltip', 'ChartTooltipContent', 'Card', 'Table', 'Select', 'Tabs']) expect(shadcn[name], name).toBeTruthy();
+    const charts = shadcn.Recharts as Record<string, unknown>;
+    for (const name of ['AreaChart', 'Area', 'BarChart', 'Bar', 'PieChart', 'Pie', 'Cell', 'CartesianGrid']) expect(charts[name], name).toBeTruthy();
+    expect(shadcn.ChartTooltip).toBe(charts.Tooltip);
+    expect(shadcn.ChartLegend).toBe(charts.Legend);
     expect(React.version).toBe('18.3.1');
   });
 });

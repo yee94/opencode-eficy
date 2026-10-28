@@ -25,7 +25,7 @@ describe('single-file TSX parser', () => {
   });
 
   it('accepts the actual skill example', () => {
-    const skill = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../skills/eficy/SKILL.md'), 'utf8');
+    const skill = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../packages/opencode2-plugin/skills/eficy/SKILL.md'), 'utf8');
     const example = skill.match(/```tsx\n([\s\S]*?)\n```/)?.[1];
     expect(example).toBeTruthy();
     expect(() => parseEficy('example.eficy', example!)).not.toThrow();

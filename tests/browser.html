@@ -1,5 +1,6 @@
 <!doctype html>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Eficy isolated runtime test</title>
 <style>html,body{height:100%;margin:0}</style>
 <script type="module">
@@ -8,7 +9,8 @@
   window.addEventListener('message', event => {
     if (event.source === window.preview?.element.contentWindow) window.reports.push(event.data);
   });
-  window.preview = createPreviewFrame();
-  window.preview.update(`import { React } from 'eficy'; import { Button } from 'shadcn'; export default function App() { const [n, setN] = React.useState(0); return <Button onClick={() => setN(n + 1)}>Count {n}</Button>; }`);
+  window.preview = createPreviewFrame({ theme: 'dark' });
+  const sample = new URLSearchParams(location.search).get('sample') || 'analytics';
+  window.preview.update(await (await fetch('/sample/' + sample)).text());
   document.body.append(window.preview.element);
 </script>

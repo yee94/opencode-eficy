@@ -2,13 +2,13 @@ import runtime from './generated/runtime';
 import { isLocalFileLink } from './file-links';
 
 /** Each preview owns its opaque-origin document and React runtime. */
-export function createPreviewFrame(options: { openLink?: (href: string, background: boolean) => boolean | Promise<boolean> } = {}): {
+export function createPreviewFrame(options: { version?: string; theme?: 'light' | 'dark'; openLink?: (href: string, background: boolean) => boolean | Promise<boolean> } = {}): {
   element: HTMLIFrameElement;
   update(source: string): void;
   dispose(): void;
 } {
   const element = document.createElement('iframe');
-  element.dataset.eficyVersion = runtime.manifest.pluginVersion;
+  if (options.version) element.dataset.eficyVersion = options.version;
   const frameId = crypto.randomUUID();
   const nonce = crypto.randomUUID();
   let ready = false;
@@ -50,7 +50,7 @@ export function createPreviewFrame(options: { openLink?: (href: string, backgrou
   element.setAttribute('sandbox', 'allow-scripts allow-forms');
   element.setAttribute('title', 'Eficy preview');
   element.style.cssText = 'width:100%;height:100%;border:0;display:block';
-  const payload = JSON.stringify({ frameId, nonce, eficy: runtime.eficy, shadcn: runtime.shadcn, shadcnCSS: runtime.shadcnCSS }).replace(/</g, '\\u003c');
+  const payload = JSON.stringify({ frameId, nonce, theme: options.theme ?? 'light', eficy: runtime.eficy, shadcn: runtime.shadcn, shadcnCSS: runtime.shadcnCSS }).replace(/</g, '\\u003c');
   const inline = (text: string) => text.replace(/<\/script/gi, '<\\/script');
   element.srcdoc = `<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' blob:; style-src 'unsafe-inline' blob:; img-src data: blob:; font-src data: blob:; connect-src blob:; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'none'"><style>html,body{margin:0;min-height:100%;font-family:system-ui,sans-serif}#eficy-error{white-space:pre-wrap;color:var(--status-error,CanvasText);background:var(--surface-background,Canvas);border-bottom:1px solid currentColor;padding:12px;margin:0;font:13px/1.5 monospace}#eficy-error[hidden]{display:none}</style></head><body><pre id="eficy-error" role="alert" hidden></pre><div id="eficy-root"></div><script id="eficy-payload" type="application/json">${payload}</script><script nonce="${nonce}">${inline(runtime.react)}</script><script nonce="${nonce}">${inline(runtime.bootstrap)}</script></body></html>`;
   return {

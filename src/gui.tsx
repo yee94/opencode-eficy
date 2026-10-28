@@ -1,4 +1,4 @@
-import { createComponent, createEffect, createMemo, createSignal, onCleanup } from 'solid-js';
+import { createComponent, createEffect, createMemo, createSignal, mergeProps, onCleanup } from 'solid-js';
 import { bindPlugin, LinkHandler, Panel, Plugin, Registry, Style, usePlugin, type PanelProps, type PanelTab } from '@opencode/plugin/gui';
 import { createPreviewFrame } from './frame';
 import fileIcon from './file-icon.svg?raw';
@@ -10,7 +10,7 @@ function linkPath(link: { href: string; base?: string }) {
   return link.base && !/^(?:[a-z]+:|\/)/i.test(href) ? `${link.base}/${href}` : href;
 }
 
-function Preview(props: PanelProps): HTMLElement {
+function Preview(props: PanelProps & { version: string; theme: 'light' | 'dark' }): HTMLElement {
   const ctx = usePlugin();
   const root = document.createElement('section');
   root.className = 'eficy-file-preview';
@@ -40,6 +40,8 @@ function Preview(props: PanelProps): HTMLElement {
   createEffect(() => {
     identity();
     const frame = createPreviewFrame({
+      version: props.version,
+      theme: props.theme,
       openLink: (href, background) => {
         const file = props.screen.file;
         const current = file.resolve(path());
@@ -74,19 +76,20 @@ function Preview(props: PanelProps): HTMLElement {
   return root;
 }
 
-export default Plugin.define({
+export function createGuiPlugin(options: { version: string; extension: string; priority: number; label: string; theme?: 'light' | 'dark' }) {
+return Plugin.define({
   i18n: {
-    en: { preview: 'Eficy preview', loading: 'Loading Eficy file…', missing: 'Eficy file not found' },
-    zh: { preview: 'Eficy 预览', loading: '正在加载 Eficy 文件…', missing: '找不到 Eficy 文件' },
+    en: { preview: `${options.label} preview`, loading: 'Loading Eficy file…', missing: 'Eficy file not found' },
+    zh: { preview: `${options.label} 预览`, loading: '正在加载 Eficy 文件…', missing: '找不到 Eficy 文件' },
   },
   setup(ctx) {
-    ctx.add(FileIcon, { id: 'eficy', extensions: ['eficy'], svg: fileIcon });
-    const View = bindPlugin(Preview);
+    ctx.add(FileIcon, { id: 'eficy', extensions: [options.extension.slice(1)], svg: fileIcon });
+    const View = bindPlugin((props: PanelProps) => createComponent(Preview, mergeProps(props, { version: options.version, theme: options.theme ?? 'light' })));
     const tabs = new Map<string, PanelTab>();
     ctx.add(Style, '.eficy-file-preview{height:100%;min-height:0;display:flex;flex-direction:column;color:inherit}.eficy-file-status{padding:8px 16px;white-space:pre-wrap;overflow-wrap:anywhere}.eficy-file-status[role=alert]{color:var(--status-error,currentColor)}.eficy-file-surface{flex:1;min-height:0;display:flex}.eficy-file-surface>iframe{width:100%;height:100%;min-height:240px;border:0;flex:1}');
     ctx.add(LinkHandler, {
-      priority: 20,
-      match: (link) => link.href.split(/[?#]/, 1)[0].endsWith('.eficy'),
+      priority: options.priority,
+      match: (link) => link.href.split(/[?#]/, 1)[0].endsWith(options.extension),
       exists: (link) => {
         const file = ctx.screen.current()?.file;
         return file ? file.exists(file.resolve(linkPath(link))) : false;
@@ -101,7 +104,7 @@ export default Plugin.define({
     ctx.add(Panel, {
       id: 'preview', region: 'side', mobile: { title: 'Eficy', order: 46, kind: 'menu' },
       list: ({ open }) => {
-        const wanted = new Set(open.filter((path) => path.endsWith('.eficy')));
+        const wanted = new Set(open.filter((path) => path.endsWith(options.extension)));
         for (const path of tabs.keys()) if (!wanted.has(path)) tabs.delete(path);
         return [...wanted].map((path) => {
           let tab = tabs.get(path);
@@ -116,3 +119,4 @@ export default Plugin.define({
     });
   },
 });
+}

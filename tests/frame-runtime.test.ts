@@ -18,7 +18,7 @@ const error = () => document.getElementById('eficy-error')!;
 
 beforeAll(async () => {
   document.body.innerHTML = '<pre id="eficy-error" hidden></pre><div id="eficy-root"></div><script id="eficy-payload" type="application/json"></script>';
-  document.getElementById('eficy-payload')!.textContent = JSON.stringify({ frameId, nonce: 'test', eficy: assets.eficy, shadcn: assets.shadcn, shadcnCSS: assets.shadcnCSS });
+  document.getElementById('eficy-payload')!.textContent = JSON.stringify({ frameId, nonce: 'test', theme: 'dark', eficy: assets.eficy, shadcn: assets.shadcn, shadcnCSS: assets.shadcnCSS });
   Object.assign(window, { React, ReactDOM: { ...ReactDOM, createRoot, hydrateRoot } });
   class SourceBlob extends NativeBlob {
     source: string;
@@ -40,6 +40,10 @@ afterAll(() => {
 });
 
 describe('iframe execution boundary', () => {
+  it('applies dark theme to the document so portal components inherit it', () => {
+    expect(document.documentElement.classList.contains('dark')).toBe(true);
+    expect(document.documentElement.style.colorScheme).toBe('dark');
+  });
   it('intercepts nested local anchors without navigating the iframe and preserves raw paths', () => {
     for (const href of ['/workspace/中文 page.eficy', 'file:///workspace/%E4%B8%AD%E6%96%87%20page.eficy', 'C:\\workspace\\page.eficy']) {
       const anchor = document.createElement('a');

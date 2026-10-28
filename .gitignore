@@ -3,3 +3,6 @@ node_modules/
 *.tgz
 coverage/
 .DS_Store
+.turbo/
+artifacts/
+dist/

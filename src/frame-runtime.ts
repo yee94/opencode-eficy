@@ -11,9 +11,11 @@ interface EficyRuntime {
 
 // This entry is built separately into inert text; it executes only inside srcdoc.
 const payload = JSON.parse(document.getElementById('eficy-payload')!.textContent!) as {
-  frameId: string; nonce: string; eficy: string; shadcn: string; shadcnCSS: string;
+  frameId: string; nonce: string; theme?: 'light' | 'dark'; eficy: string; shadcn: string; shadcnCSS: string;
 };
 document.getElementById('eficy-payload')!.remove();
+document.documentElement.classList.toggle('dark', payload.theme === 'dark');
+document.documentElement.style.colorScheme = payload.theme === 'dark' ? 'dark' : 'light';
 const React = (window as unknown as { React: typeof ReactTypes }).React;
 const ReactDOM = (window as unknown as { ReactDOM: { createRoot(element: HTMLElement): Root; flushSync(callback: () => void): void } }).ReactDOM;
 const errorElement = document.getElementById('eficy-error')!;

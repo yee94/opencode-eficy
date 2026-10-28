@@ -1,0 +1,14 @@
+{
+  "name": "@eficy/opencode2-plugin",
+  "version": "0.2.0",
+  "description": "Self-contained Eficy TSX previews, skill and validator for OpenCode 2",
+  "type": "module",
+  "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/yee94/opencode-eficy.git", "directory": "packages/opencode2-plugin" },
+  "homepage": "https://github.com/yee94/opencode-eficy/tree/main/packages/opencode2-plugin#readme",
+  "publishConfig": { "access": "public", "registry": "https://registry.npmjs.org/" },
+  "exports": { ".": "./dist/index.js", "./gui-experimental": "./dist/gui-experimental.cjs" },
+  "files": ["dist", "skills", "samples", "README.md", "LICENSE"],
+  "scripts": { "build": "node ../../scripts/build-plugin.mjs" },
+  "dependencies": { "@opencode/plugin": "2.2.0", "sucrase": "3.35.0" }
+}
