@@ -1,5 +1,11 @@
 # @eficy/opencode2-shadcn
 
+## 0.1.1
+
+### Patch Changes
+
+- Make the injected skill a general Eficy + shadcn rendering guide for pages, forms, tools and reports. Load compact dark report guidance only for data-analysis requests.
+
 ## 0.1.0
 
 - 新增独立 shadcn 预览插件、生成技能、校验器和完整报告模板。

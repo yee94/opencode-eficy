@@ -5,7 +5,7 @@
 | npm 包 | 文件后缀 | 用途 |
 | --- | --- | --- |
 | [`@eficy/opencode2-plugin`](packages/opencode2-plugin/README.md) | `.eficy` | 通用交互式 TSX 预览 |
-| [`@eficy/opencode2-shadcn`](packages/opencode2-shadcn/README.md) | `.shadcn.eficy` | 暗色数据分析报告，400–600px 阅读布局与交互图表 |
+| [`@eficy/opencode2-shadcn`](packages/opencode2-shadcn/README.md) | `.shadcn.eficy` | 通用 Eficy + shadcn GUI 与生成技能；内置暗色数据分析报告场景 |
 
 ## 安装
 
@@ -16,7 +16,7 @@
   "$schema": "https://opencode.ai/config.json",
   "plugins": [
     "@eficy/opencode2-plugin@0.2.0",
-    "@eficy/opencode2-shadcn@0.1.0"
+    "@eficy/opencode2-shadcn@0.1.1"
   ]
 }
 ```

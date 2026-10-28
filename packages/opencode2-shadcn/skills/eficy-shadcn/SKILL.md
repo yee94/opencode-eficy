@@ -1,17 +1,16 @@
 ---
 name: eficy-shadcn
-description: Create compact dark data-analysis reports as one .shadcn.eficy preview, with evidence-backed conclusions, interactive charts and a 400–600px reading layout.
+description: Build interactive Eficy + shadcn previews as single .shadcn.eficy files: pages, forms, tools, dashboards and data-analysis reports. Includes Signals, components, icons and chart rendering rules.
 ---
 
-# shadcn 暗色数据分析报告
+# Eficy + shadcn 单文件交互预览
 
 ## 一次交付流程
 
-1. 明确分析问题、数据来源、时间范围和统计口径。用户提供了数据就据此计算；缺少数据时明确标注模拟数据。先写有证据的结论，再组织支持结论的指标和图表。
-2. 调用 `eficy_shadcn_template({ preset: "analytics" })` 获取经营分析报告；订单履约分析用 `preset: "operations"`。工具返回完整 TSX，不写文件。替换分析结论、数据和文案；结论中的数字必须随筛选同步计算。
-3. 一个文件承载报告：标题与范围 → 核心结论 → 关键指标 → 趋势/构成图 → 必要明细 → 数据口径与局限。以阅读和理解为主，按分析问题选择图表数量与类型。日期、维度和指标切换用于探索数据；只有用户明确要求管理系统时才加入侧栏、工作空间或管理操作。
-4. 调用 `eficy_shadcn_validate({ path: "dashboard.shadcn.eficy", source: "完整源码" })`，修复错误至 `valid: true`。
-5. 将同一份源码保存到 `.shadcn.eficy` 文件，返回 `[打开仪表盘](dashboard.shadcn.eficy)`。说明演示数据范围和可用交互。校验器只验证语法、后缀和导入边界；效果必须在预览里核对。
+1. 根据用户目标选择页面结构与交互：表单、计算工具、展示页、dashboard 等都可直接用 Eficy + shadcn 实现。用户要求数据分析、图表解读或报告时，先读 [报告规范](references/reports.md)，再生成可打开的报告文件。
+2. 将组件、数据和状态写入一个 `.shadcn.eficy` TSX 文件，遵循下面的渲染契约。报告可选用 `eficy_shadcn_template` 获取完整起点；其他页面直接编写，不必套用报告模板。
+3. 调用 `eficy_shadcn_validate({ path: "preview.shadcn.eficy", source: "完整源码" })`，修复错误至 `valid: true`。
+4. 将同一份源码保存到磁盘，返回 `[打开预览](preview.shadcn.eficy)`。在 GUI 中检查实际交互。校验器只验证语法、后缀和导入边界，不替代浏览器验收。
 
 ## 文件与运行时
 
@@ -51,16 +50,35 @@ const { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
 ## Signals 与真实业务交互
 
 - 原子 Signal 在模块级创建；业务状态不用 React Hooks。自定义组件在函数体读取 `.value` 时用 `component()` 包裹。
-- 派生结论、图表数据和 KPI 使用一致的统计口径，修改日期/维度后一起更新；抽样明细明确说明其与汇总的关系。
+- 用 `computed()` 派生筛选结果、计算值和展示数据；事件修改源 Signal，组件自动重新渲染。文件更新时模块会重新求值，状态不持久化。
 - `Input` 使用 `value={search.value}`、`onChange={e => { search.value = e.target.value; }}`；`Select` 使用 `value={range.value}`、`onValueChange={value => { range.value = value; }}`；`Tabs` 同样使用 `onValueChange`，不要把 DOM `onChange` 套给它们。
 - 多字段重置用 `batch`。数组/对象更新使用新引用，`effect` 不读写同一个 Signal 形成循环。
-- 维度切换真实改变分析范围；搜索真实过滤明细；区间真实改变结论/图表/KPI。结论区分观测事实、解释与建议，相关性不直接写成因果。
+- 每个可操作控件都有可见结果；表单展示校验或提交结果，工具更新计算值，筛选更新展示数据。
+
+### 最小交互示例
+
+```tsx
+import { signal, computed, component } from 'eficy';
+import { Card, CardContent, Input, Button } from 'shadcn';
+const name = signal('');
+const message = computed(() => name.value.trim() ? `你好，${name.value.trim()}` : '输入姓名开始');
+const Preview = component(() => <main className="p-4">
+  <Card><CardContent className="p-4 space-y-3">
+    <label htmlFor="name">姓名</label>
+    <Input id="name" value={name.value} onChange={event => { name.value = event.target.value; }} />
+    <p aria-live="polite">{message.value}</p>
+    <Button onClick={() => { name.value = ''; }} disabled={!name.value}>清空</Button>
+  </CardContent></Card>
+</main>);
+```
+
+文件末尾添加 `export default Preview;`。宿主会编译 TSX/工具类并挂载默认导出，无需自行调用 ReactDOM。
 
 ## 视觉与响应式
 
-默认主题为「暗色阅读报告」：iframe 的 html 已设置 `.dark` 和 `color-scheme: dark`，下拉/浮层继承同一主题。使用 shadcn 语义色：近黑背景、深灰图表卡片、细灰边框、亮色正文，蓝色表示主要序列、青色表示构成或正向状态。
+默认暗色：iframe 的 html 已设置 `.dark` 和 `color-scheme: dark`，下拉/浮层继承同一主题。使用 shadcn 的 `bg-background`、`text-foreground`、`text-muted-foreground`、`border-border` 等语义工具类。宿主运行时编译 Tailwind/UnoCSS 风格类名；单文件内也可用 `<style>` 定义专用布局。
 
-阅读宽度以 400–600px 为目标，根容器 `width:100%; max-width:600px; margin-inline:auto; box-sizing:border-box`，内边距 16–20px。宽屏仍保持 600px 居中，小于 400px 时随容器收缩。正文 14–16px、行高 1.7–1.85；标题 24–28px，结论小标题 18px。图表纵向排列，KPI 最多两列，辅助筛选紧邻报告标题。宽明细表只在自身容器内横向滚动，核心结论应无需横滚即可读完。浏览器分别检查 400px、600px 和宽屏居中效果。
+布局根据页面用途与宿主容器自适应，图表明确高度，宽表格内部横滚。400–600px 的阅读宽度用于报告场景，通用页面按任务选择合适宽度。
 
 相对或绝对本地文件链接使用 `<a href>`，宿主负责打开文件标签页；页面内部导航优先 Signal 状态或 `#section`，不导航 iframe。
 
