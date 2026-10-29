@@ -10,6 +10,13 @@ const directory = process.cwd();
 const root = fileURLToPath(new URL('../', import.meta.url));
 await rm(resolve(directory, 'dist'), { recursive: true, force: true });
 await esbuild({
+  entryPoints: [resolve(root, 'scripts/export-html.ts')],
+  outfile: resolve(directory, 'skills/eficy/scripts/export-html.mjs'),
+  bundle: true, platform: 'node', format: 'esm', target: 'node22',
+  minify: true,
+  banner: { js: 'import { createRequire } from "node:module"; const require = createRequire(import.meta.url);' },
+});
+await esbuild({
   entryPoints: [resolve(directory, 'src/index.ts')],
   outfile: resolve(directory, 'dist/index.js'),
   bundle: true, platform: 'node', format: 'esm', target: 'node22',

@@ -2,8 +2,8 @@
   "$schema": "https://turbo.build/schema.json",
   "tasks": {
     "build": {
-      "inputs": ["$TURBO_DEFAULT$", "$TURBO_ROOT$/src/**", "$TURBO_ROOT$/scripts/**", "$TURBO_ROOT$/package.json", "$TURBO_ROOT$/pnpm-lock.yaml", "$TURBO_ROOT$/LICENSE"],
-      "outputs": ["dist/**", "LICENSE"]
+      "inputs": ["$TURBO_DEFAULT$", "!skills/eficy/scripts/export-html.mjs", "$TURBO_ROOT$/src/**", "$TURBO_ROOT$/scripts/**", "$TURBO_ROOT$/package.json", "$TURBO_ROOT$/pnpm-lock.yaml", "$TURBO_ROOT$/LICENSE"],
+      "outputs": ["dist/**", "skills/eficy/scripts/export-html.mjs", "LICENSE"]
     }
   }
 }

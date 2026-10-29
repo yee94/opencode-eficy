@@ -37,6 +37,10 @@ description: 创建或修复 Eficy + shadcn 单文件交互页面与报告。用
 
 用 `<a href="/workspace/页面 文件.eficy">打开页面</a>` 提供文件跳转。也可使用正确编码的 `file://` URL；相对链接以当前文件所在目录为基准。点击交给宿主文件标签页，再由对应插件渲染，不用 `window.location` 或 `window.open` 导航预览 iframe。`#section` 保留为当前页面锚点。链接目标须是当前服务可访问的真实文件；文件链接不等于跨文件 JS import。
 
+## 导出 HTML
+
+用户要求导出 HTML 时，读取[HTML 导出方法](references/export.md)，直接生成并交付可独立打开的 `.html` 文件；独立使用本 skill 时同样适用。
+
 ## Signals 模式
 
 - 在模块级声明原子 `signal`；派生值用 `computed`，事件直接更新 `.value`。

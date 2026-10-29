@@ -1,5 +1,11 @@
 # @eficy/opencode2-plugin
 
+## 0.5.3
+
+### Patch Changes
+
+- Add a self-contained HTML export script and reference to the Eficy skill. Standalone skill users can generate interactive HTML directly using the same document generator and embedded runtime as the preview export action.
+
 ## 0.5.2
 
 ### Patch Changes
