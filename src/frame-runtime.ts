@@ -10,12 +10,14 @@ interface EficyRuntime {
   EficyProvider: ReactTypes.ComponentType<{ core: unknown; children?: ReactTypes.ReactNode }>;
 }
 
-// This entry is built separately into inert text; it executes only inside srcdoc.
+// This entry is built separately into inert text for previews and exported HTML.
 const payload = JSON.parse(document.getElementById('eficy-payload')!.textContent!) as {
   frameId: string; nonce: string; theme?: 'light' | 'dark'; eficy: string; shadcn: string; shadcnCSS: string;
   loadingText: { initial: string; compiling: string; dependencies: string; rendering: string; detail: string };
   snapshot: string;
+  source?: string;
 };
+const standalone = payload.source !== undefined;
 document.getElementById('eficy-payload')!.remove();
 document.documentElement.classList.toggle('dark', payload.theme === 'dark');
 document.documentElement.style.colorScheme = payload.theme === 'dark' ? 'dark' : 'light';
@@ -31,6 +33,7 @@ retry.textContent = 'Retry / 重试';
 retry.hidden = true;
 errorElement.after(retry);
 retry.onclick = () => {
+  if (standalone) { window.location.reload(); return; }
   hasContent = false;
   rootElement.hidden = true;
   errorElement.hidden = true;
@@ -54,7 +57,9 @@ let Eficy: EficyRuntime;
 let core: unknown;
 const css = document.createElement('style');
 document.head.append(css);
-const notify = (type: string, detail: Record<string, unknown> = {}) => parent.postMessage({ protocol: 'eficy-preview', frameId: payload.frameId, type, ...detail }, '*');
+const notify = (type: string, detail: Record<string, unknown> = {}) => {
+  if (!standalone) parent.postMessage({ protocol: 'eficy-preview', frameId: payload.frameId, type, ...detail }, '*');
+};
 const showLoading = (title: string) => {
   loadingTitle.textContent = title;
   loadingDetail.textContent = payload.loadingText.detail;
@@ -260,7 +265,7 @@ function receive(event: MessageEvent) {
   void update(data.source, revision);
 }
 window.addEventListener('pagehide', cleanup);
-document.addEventListener('click', onFileLink);
+if (!standalone) document.addEventListener('click', onFileLink);
 void (async () => {
   try {
     const eficyURL = blob(payload.eficy);
@@ -279,7 +284,13 @@ void (async () => {
     core = await Eficy.initEficy({ components: {} });
     if (disposed) return;
     root = ReactDOM.createRoot(rootElement);
-    window.addEventListener('message', receive);
-    notify('ready');
+    if (standalone) {
+      revision = 1;
+      showLoading(payload.loadingText.compiling);
+      await update(payload.source!, revision);
+    } else {
+      window.addEventListener('message', receive);
+      notify('ready');
+    }
   } catch (error) { if (!disposed) showError(error); }
 })();

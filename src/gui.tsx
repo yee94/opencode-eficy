@@ -8,7 +8,6 @@ import exportStyles from './export-toolbar.css?inline';
 import { ExportPDF, ExportLongImage } from './export-contract';
 import { PreviewActions, type PreviewActionSurface } from './preview-actions';
 import type { ExportFormat } from './export-types';
-import { snapshotDocument } from './export-html';
 import { loadingStyles, loadingSVG } from './loading';
 
 const FileIcon = Registry.define<{ id: string; extensions: readonly string[]; svg: string; lightSvg?: string }>('yuri.file-icon');
@@ -155,10 +154,10 @@ function Preview(props: PanelProps & { version: string; theme: 'light' | 'dark' 
           ? actionSurface.snapshot({ onProgress: progress, signal })
           : current.snapshot(progress, signal);
         if (format === 'html') {
-          const snapshot = await capture();
-          signal.throwIfAborted();
           progress({ stage: 'encoding' });
-          const content = snapshotDocument(snapshot, filename);
+          await new Promise(resolve => setTimeout(resolve, 0));
+          signal.throwIfAborted();
+          const content = current.exportHTML(filename);
           progress({ stage: 'saving' });
           signal.throwIfAborted();
           const saved = await ctx.system.save({ name: filename, content });

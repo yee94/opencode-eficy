@@ -1,7 +1,6 @@
-import runtime from './generated/runtime';
 import { isLocalFileLink } from './file-links';
 import type { ExportProgress, ViewExportSnapshot } from './export-types';
-import { loadingStyles, loadingSVG } from './loading';
+import { defaultLoadingText, previewDocument } from './frame-document';
 
 export type PreviewStatus = { status: 'loading'; title: string; restart?: boolean } | { status: 'committed' } | { status: 'error'; error: string; hasContent: boolean };
 
@@ -10,12 +9,12 @@ export function createPreviewFrame(options: { version?: string; theme?: 'light' 
   element: HTMLIFrameElement;
   update(source: string): void;
   snapshot(progress: (value: ExportProgress) => void, signal?: AbortSignal): Promise<ViewExportSnapshot>;
+  exportHTML(title: string): string;
   dispose(): void;
 } {
   const element = document.createElement('iframe');
   if (options.version) element.dataset.eficyVersion = options.version;
   let frameId = crypto.randomUUID();
-  const nonce = crypto.randomUUID();
   let ready = false;
   let rendered = false;
   let disposed = false;
@@ -110,23 +109,15 @@ export function createPreviewFrame(options: { version?: string; theme?: 'light' 
   element.setAttribute('sandbox', 'allow-scripts allow-forms');
   element.setAttribute('title', 'Eficy preview');
   element.style.cssText = 'width:100%;height:100%;border:0;display:block';
-  const loadingText = options.loadingText ?? {
-    initial: '正在准备预览', compiling: '正在准备页面', dependencies: '正在加载组件与样式', rendering: '正在呈现预览',
-    detail: '首次加载可能需要一些时间，准备完成后会自动显示。',
-  };
-  const payload = () => JSON.stringify({ frameId, nonce, theme: options.theme ?? 'dark', loadingText, eficy: runtime.eficy, shadcn: runtime.shadcn, shadcnCSS: runtime.shadcnCSS, snapshot: runtime.snapshot }).replace(/</g, '\\u003c');
-  const text = (value: string) => value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  const inline = (text: string) => text.replace(/<\/script/gi, '<\\/script');
-  const documentSource = () => `<!doctype html><html style="color-scheme:${options.theme === 'light' ? 'light' : 'dark'}"><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' blob: https:; style-src 'unsafe-inline' blob: https:; img-src data: blob: https:; font-src data: blob: https:; connect-src blob: https:; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'none'"><style>
-html,body{margin:0;min-height:100%;font-family:system-ui,sans-serif}
-body{background:Canvas;color:CanvasText}
-#eficy-error{white-space:pre-wrap;overflow-wrap:anywhere;color:var(--status-error,CanvasText);background:var(--surface-background,Canvas);border-bottom:1px solid currentColor;padding:12px;margin:0;font:13px/1.5 monospace}
-${loadingStyles('#eficy-loading')}
-#eficy-error[hidden],#eficy-loading[hidden],#eficy-root[hidden]{display:none!important}
-</style></head><body><section id="eficy-loading" role="status" aria-live="polite" aria-atomic="true">${loadingSVG}<p id="eficy-loading-title" class="eficy-loading-title">${text(loadingText.initial)}</p><p id="eficy-loading-detail" class="eficy-loading-detail">${text(loadingText.detail)}</p></section><pre id="eficy-error" role="alert" hidden></pre><div id="eficy-root" aria-busy="true" hidden></div><script id="eficy-payload" type="application/json">${payload()}</script><script nonce="${nonce}">${inline(runtime.react)}</script><script nonce="${nonce}">${inline(runtime.bootstrap)}</script></body></html>`;
+  const loadingText = options.loadingText ?? defaultLoadingText;
+  const documentSource = () => previewDocument({ frameId, theme: options.theme, loadingText });
   element.srcdoc = documentSource();
   return {
     element,
+    exportHTML(title) {
+      if (disposed || !rendered || source === undefined) throw new Error('Wait for the preview to finish rendering before exporting.');
+      return previewDocument({ source, title, theme: options.theme, loadingText });
+    },
     update(nextSource) {
       if (disposed || nextSource === source) return;
       cancelSnapshot();

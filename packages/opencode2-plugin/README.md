@@ -4,12 +4,12 @@
 
 ## 安装（OpenCode 2）
 
-`0.5.0` 默认提供完整 Eficy + shadcn 页面与报告引导，支持 HTTPS 模块与 CSS 导入、静态 HTML 单文件导出，以及按客户端能力提供的 PDF/长图导出。在连接服务的全局 `opencode.json(c)` 中加入 npm 包，保留已有配置：
+默认提供完整 Eficy + shadcn 页面与报告引导，支持 HTTPS 模块与 CSS 导入、HTML 单文件导出，以及按客户端能力提供的 PDF/长图导出。在连接服务的全局 `opencode.json(c)` 中加入 npm 包，保留已有配置：
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugins": ["@eficy/opencode2-plugin@0.5.0"]
+  "plugins": ["@eficy/opencode2-plugin@0.5.1"]
 }
 ```
 
@@ -91,15 +91,17 @@ iframe 采用 `allow-scripts allow-forms`，不授予 same-origin 权限。`allo
 
 ## 导出报告
 
-提供 `yuri.previewActions` v1 的宿主负责操作区排版：移动端标题行、PC 右上角悬浮位置，与源码切换并排。插件注册当前 iframe 的 `element/capture/render`，`render(surface)` 的点击回调通过 `surface.snapshot()` 获取该实例最新内容，并将 `surface.signal` 传入导出任务。卸载、源码切换和重试撤销按钮；两份预览互不串用快照。未提供该契约时使用内联悬浮菜单。
+提供 `yuri.previewActions` v1 的宿主负责操作区排版：移动端标题行、PC 右上角悬浮位置，与源码切换并排。插件注册当前 iframe 的 `element/capture/render`，`render(surface)` 的 PDF/PNG 点击回调通过 `surface.snapshot()` 获取该实例最新内容，所有导出任务都使用 `surface.signal`。卸载、源码切换和重试撤销按钮；两份预览互不串用快照或源码。未提供该契约时使用内联悬浮菜单。
 
 入口仅显示 16px 下载图标，36px 触控区域采用淡黑半透明背景，无明显边框和强阴影；「导出」文字仅保留于本地化 aria-label/title。点击后才出现菜单，忙碌圆环与成功小勾号均在入口原位显示。
 
-预览右上角悬浮的「导出」下拉菜单支持 PDF、PNG 长图和静态 HTML 单文件，不占用整行、不移动报告，保留当前页面的筛选、输入和展开状态。菜单支持 Escape 归还入口焦点、外点（含 iframe）收起；加载未就绪时禁用。PDF/PNG 通过官方 `Contract.define` / `ctx.use` 分别消费 Yuri 的两个客户端 GSAPI：`yuri.exportPDF` 和 `yuri.exportLongImage`。插件只有窗口 setup，原生渲染和保存由当前设备的宿主实现。
+预览右上角悬浮的「导出」下拉菜单支持 PDF、PNG 长图和交互 HTML 单文件，不占用整行、不移动报告。PDF/PNG 保留当前页面的筛选、输入和展开状态，HTML 包含可重新运行的页面源码。菜单支持 Escape 归还入口焦点、外点（含 iframe）收起；加载未就绪时禁用。PDF/PNG 通过官方 `Contract.define` / `ctx.use` 分别消费 Yuri 的两个客户端 GSAPI：`yuri.exportPDF` 和 `yuri.exportLongImage`。插件只有窗口 setup，原生渲染和保存由当前设备的宿主实现。
 
 PDF/PNG 的契约独立判断 `active` 且 `value.version === 1`，不可用时隐藏对应菜单项。能力属于当前客户端设备，与连接本地、远端、LAN 或 Relay 服务无关。Electron 或安装了对应原生实现的移动壳可提供能力。能力撤销/替换取消对应格式的任务；另一格式变化不打断当前任务。快照开始与调用原生保存前重新检查对应能力及 generation，关闭预览或内容更新也会取消任务。能力恢复不会重挂 iframe 或丢失交互状态。
 
-「导出 HTML」始终保留，预览就绪后可用，不依赖 PDF/PNG 契约。`src/export-html.ts` 将当前快照封装为含 UTF-8、标题、视口和 CSP 的完整 HTML 文档，通过 SDK `ctx.system.save({ name, content })` 保存；桌面端弹保存框，网页端下载。文件内嵌样式、图片和字体，保留当前筛选结果、输入值和页面尺寸，可离线阅读，不包含 React/Eficy 脚本或后续筛选交互。准备快照时可以取消；保存框打开后由保存框确认或取消，SDK 返回的布尔值决定最终状态。
+「导出 HTML」始终保留，预览就绪后可用，不依赖 PDF/PNG 契约。`frame.exportHTML()` 获取当前已渲染版本的源码，通过共用的 `src/frame-document.ts` 生成完整 HTML，内嵌 Eficy/React 运行时、编译器和启动逻辑。打开文件后自动挂载页面，Signals、computed、输入绑定和组件事件继续工作，不依赖宿主消息。独立模式不注册宿主消息或本地文件链接转发，重试按钮直接重新加载文档。主题继承当前预览；标题和源码经过 HTML/script 边界转义。
+
+HTML 打开时从源码初始状态运行，不序列化已有 Signals 值。HTTPS 组件、CSS、图片和字体保留原 URL，加载它们仍需网络与 CORS；仅内置依赖的页面可离线运行。文件通过 SDK `ctx.system.save({ name, content })` 保存，桌面端弹保存框，网页端下载。生成文档前可以取消；保存框打开后由保存框确认或取消，SDK 返回的布尔值决定最终状态。
 
 结构类型在 `src/export-types.ts` 中维护，契约声明在 `src/export-contract.ts`。公开输入为 `{ snapshot: { html, width, height }, filename }`；PDF 另有可选 `pageSize: 'a4' | 'letter'`，当前按钮使用 A4。每个能力提供 `version: 1`、各自的 `limits` 和各自的方法 `exportPDF` / `exportLongImage`，调用选项为 `{ signal, onProgress }`。插件按能力限制检查 HTML UTF-8 字节、宽高和像素总数；宿主仍独立执行资源及安全校验。
 

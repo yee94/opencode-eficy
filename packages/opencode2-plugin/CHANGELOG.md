@@ -1,5 +1,11 @@
 # @eficy/opencode2-plugin
 
+## 0.5.1
+
+### Patch Changes
+
+- Correct HTML export to embed the current source and Eficy/React runtime, preserving Signals interactivity in a standalone page. Share the preview bootstrap and document generator, start without a host handshake, and support local retry. HTTPS dependencies retain their original URLs; each open starts from source-defined state.
+
 ## 0.5.0
 
 ### Minor Changes

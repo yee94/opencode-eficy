@@ -8,13 +8,13 @@ Eficy 为 OpenCode 2 提供 `.eficy` 单文件交互预览，内置页面与报�
 
 ## 安装
 
-将 `@eficy/opencode2-plugin@0.5.0` 加入连接服务的全局 `opencode.jsonc`，保留已有配置：
+将 `@eficy/opencode2-plugin@0.5.1` 加入连接服务的全局 `opencode.jsonc`，保留已有配置：
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
   "plugins": [
-    "@eficy/opencode2-plugin@0.5.0"
+    "@eficy/opencode2-plugin@0.5.1"
   ]
 }
 ```
@@ -31,13 +31,13 @@ Eficy 为 OpenCode 2 提供 `.eficy` 单文件交互预览，内置页面与报�
 
 ### 客户端导出
 
-宿主通过 `yuri.previewActions` v1 装载下载控件：PC 在右上角与源码按钮并排，手机在半浮层标题行。`src/preview-actions.ts` 声明结构契约，按当前 Solid Panel mount 注册 iframe 元素、实时 capture 和操作 UI；点击通过该 surface 的 `snapshot()` 获取最新 HTML/宽高，不截工具栏。卸载撤销按钮并取消任务。未提供此契约时使用内联悬浮入口。
+宿主通过 `yuri.previewActions` v1 装载下载控件：PC 在右上角与源码按钮并排，手机在半浮层标题行。`src/preview-actions.ts` 声明结构契约，按当前 Solid Panel mount 注册 iframe 元素、实时 capture 和操作 UI；PDF/PNG 点击通过该 surface 的 `snapshot()` 获取最新 HTML/宽高，不截工具栏。卸载撤销按钮并取消任务。未提供此契约时使用内联悬浮入口。
 
 入口为报告预览右上角的 16px 下载图标，采用淡黑半透明底、无明显边框或阴影，不显示文字、不占用布局；本地化名称保留在 aria-label/title，点击才展开 PDF/PNG/HTML 菜单。进行中原位显示带取消按钮的圆环，成功原位短暂显示勾号；失败通过宿主全局 toast 展示本地化错误，原位保留可重试的错误图标、详细 title/aria 和简短读屏状态，不显示局部长文或错误 pill。菜单支持 Escape 收起并归还焦点、外点（含 iframe）收起；加载未就绪时禁用。控件触控目标至少 36px，支持宿主明暗色变量与减少动画偏好。
 
 错误通知使用 SDK 2.2.0 官方 `ctx.toast.show({ title, description, variant: 'error' })`，标题为本地化简短提示，description 为详细错误。`ctx.toast` 不可用时通过错误图标及 title/aria 提示，支持重试。取消、abort 和销毁后的迟到失败不触发 toast；已提交的原生 saved 结果仍优先于 abort。
 
-菜单还提供「导出 HTML」，通过 SDK 的 `ctx.system.save` 保存完整静态单文件：桌面端弹出保存框，网页端下载。复用当前快照，内嵌样式、图片和字体，保留当前筛选结果、输入值和页面尺寸，可离线阅读；不携带页面脚本或后续筛选交互。准备快照时可取消，保存框打开后以保存框的确认/取消结果为准。
+「导出 HTML」通过 SDK 的 `ctx.system.save` 保存可独立运行的交互单文件：桌面端弹出保存框，网页端下载。文件包含当前预览源码、Eficy/React 运行时、编译器和启动逻辑，打开即可使用 Signals、输入绑定和筛选交互，无需 OpenCode 宿主。预览与导出共用 `src/frame-document.ts` 和 `src/frame-runtime.ts`。打开时从源码初始状态运行，不序列化当前 Signals 值；HTTPS 组件、样式、图片和字体仍从原地址加载，只有不依赖外部资源的页面可完整离线运行。生成文件时可取消，保存框打开后以保存框的确认/取消结果为准。
 
 PDF/PNG 使用 Yuri 的独立 GSAPI `yuri.exportPDF` / `yuri.exportLongImage`，通过官方 `Contract.define` / `ctx.use` 获取当前设备的 v1 活动能力，分别控制对应菜单项；HTML 不依赖这两个能力。本地、远端和 Relay 连接使用相同判断。插件不含 main/Electron 导出代码。iframe 生成保留实时交互状态的自包含 HTML 快照，宿主负责原生 PDF/PNG 生成和保存。
 

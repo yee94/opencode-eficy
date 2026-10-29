@@ -23,6 +23,24 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 describe('opaque preview frame lifecycle', () => {
+  it('exports only the latest rendered source as a standalone runtime document', () => {
+    vi.useFakeTimers();
+    const { frame, receive } = setup({ theme: 'light' });
+    expect(() => frame.exportHTML('report.html')).toThrow('finish rendering');
+    frame.update('first');
+    receive('ready');
+    receive('status', { data: { revision: 1, status: 'committed' } });
+    frame.update('latest');
+    expect(() => frame.exportHTML('report.html')).toThrow('finish rendering');
+    receive('status', { data: { revision: 2, status: 'committed' } });
+    const doc = new DOMParser().parseFromString(frame.exportHTML('report.html'), 'text/html');
+    expect(JSON.parse(doc.querySelector('#eficy-payload')!.textContent!).source).toBe('latest');
+    expect(doc.documentElement.style.colorScheme).toBe('light');
+    expect(doc.title).toBe('report.html');
+    frame.dispose();
+    expect(() => frame.exportHTML('report.html')).toThrow('finish rendering');
+  });
+
   it('snapshots only the current rendered revision and authenticates progress and HTML responses', async () => {
     vi.useFakeTimers();
     const onReadyChange = vi.fn();

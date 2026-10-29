@@ -153,32 +153,31 @@ function readyPreview() {
   return { ...app, frame, send, finishSnapshot };
 }
 
-it.each([true, false])('saves current HTML through the system API and honors its result (%s)', async saved => {
+it.each([true, false])('saves runtime HTML through the system API without capturing a snapshot (%s)', async saved => {
   const app = readyPreview();
   context.system.save.mockResolvedValue(saved);
   app.root.querySelector<HTMLButtonElement>('.eficy-export-choices button')!.click();
-  app.finishSnapshot();
   await vi.waitFor(() => expect(context.system.save).toHaveBeenCalledOnce());
   const file = context.system.save.mock.calls[0][0];
   expect(file.name).toBe('page.html');
   const doc = new DOMParser().parseFromString(file.content, 'text/html');
   expect(doc.doctype?.name).toBe('html');
-  expect(doc.body.textContent).toBe('report');
+  expect(JSON.parse(doc.querySelector('#eficy-payload')!.textContent!).source).toBe('source');
+  expect(app.send.mock.calls.some(([message]) => message.type === 'snapshot')).toBe(false);
   expect(app.root.querySelector('.eficy-export-feedback [role=status]')?.textContent).toBe(saved ? 'exportSaved' : 'exportCancelled');
 });
 
-it.each(['cancel', 'update', 'dispose'] as const)('does not save HTML when %s interrupts capture', async action => {
+it.each(['cancel', 'update', 'dispose'] as const)('does not save HTML when %s interrupts preparation', async action => {
   const app = readyPreview();
   app.root.querySelector<HTMLButtonElement>('.eficy-export-choices button')!.click();
   if (action === 'cancel') app.root.querySelector<HTMLButtonElement>('.eficy-export-cancel')!.click();
   if (action === 'update') app.setState({ loaded: true, content: { content: 'updated source' } });
   if (action === 'dispose') app.dispose();
-  if (action !== 'dispose') app.finishSnapshot();
-  await Promise.resolve(); await Promise.resolve();
+  await new Promise(resolve => setTimeout(resolve, 10));
   expect(context.system.save).not.toHaveBeenCalled();
 });
 
-it('uses the hosted HTML snapshot and lets a failed save retry with fresh content', async () => {
+it('exports fresh source from the hosted toolbar after a failed save', async () => {
   const slot = document.createElement('div'); document.body.append(slot);
   const controller = new AbortController();
   const capture = vi.fn(async () => snapshot);
@@ -195,11 +194,14 @@ it('uses the hosted HTML snapshot and lets a failed save retry with fresh conten
   const button = slot.querySelector<HTMLButtonElement>('.eficy-export-choices button')!;
   button.click();
   await vi.waitFor(() => expect(slot.querySelector('summary')?.dataset.state).toBe('error'));
-  capture.mockResolvedValue({ ...snapshot, html: snapshot.html.replace('report', 'latest filter') });
+  app.setState({ loaded: true, content: { content: 'latest source' } });
+  app.receive('status', { revision: 2, status: 'committed' });
   button.click();
   await vi.waitFor(() => expect(slot.querySelector('summary')?.dataset.state).toBe('saved'));
-  expect(capture).toHaveBeenCalledTimes(2);
-  expect(context.system.save).toHaveBeenLastCalledWith({ name: 'page.html', content: expect.stringContaining('latest filter') });
+  expect(capture).not.toHaveBeenCalled();
+  const file = context.system.save.mock.calls.at(-1)![0];
+  const doc = new DOMParser().parseFromString(file.content, 'text/html');
+  expect(JSON.parse(doc.querySelector('#eficy-payload')!.textContent!).source).toBe('latest source');
 });
 
 it.each(['pdf', 'png'] as const)('uses only the independently active %s method and retains its limits', async format => {
