@@ -1,15 +1,15 @@
 # Eficy：单文件交互预览
 
-一个 OpenCode 插件同时提供 `eficy` skill、`eficy_validate` 工具与 `.eficy` GUI 预览。服务端插件 ID 为 `eficy`，SDK 使用 `@opencode/plugin` 2.2.0。iframe 内置 Eficy/React；组件、图标、图表及 CSS 通过固定版本 HTTPS 地址按需加载。shadcn 是 skill 中的组件使用方法，不需要第二个渲染插件。
+提供 `eficy` 技能、报告模板、`eficy_validate` 校验工具与 `.eficy` GUI 预览。服务端插件 ID 为 `eficy`，SDK 使用 `@opencode/plugin` 2.2.0。iframe 内置 Eficy/React；组件、图标、图表及 CSS 通过固定版本 HTTPS 地址按需加载。
 
 ## 安装（OpenCode 2）
 
-`0.4.5` 默认提供完整 Eficy + shadcn 页面与报告引导，支持 HTTPS 模块与 CSS 导入，以及按客户端能力提供的 PDF/长图导出。在连接服务的全局 `opencode.json(c)` 中加入 npm 包，保留已有配置：
+`0.5.0` 默认提供完整 Eficy + shadcn 页面与报告引导，支持 HTTPS 模块与 CSS 导入、静态 HTML 单文件导出，以及按客户端能力提供的 PDF/长图导出。在连接服务的全局 `opencode.json(c)` 中加入 npm 包，保留已有配置：
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugins": ["@eficy/opencode2-plugin@0.4.5"]
+  "plugins": ["@eficy/opencode2-plugin@0.5.0"]
 }
 ```
 
@@ -45,9 +45,9 @@ pnpm test
 
 > 使用 eficy 技能生成一个带计数按钮和姓名输入框的 demo.eficy，先用 eficy_validate 验证，再保存并返回链接。
 
-`.eficy` 是单文件纯 TSX，直接默认导出一个 React 组件。支持静态 `eficy` 与 HTTPS ESM/CSS 导入，旧 `shadcn` 裸导入保留兼容。只看最后一层后缀；旧 `report.shadcn.eficy` 同样可打开。完整 Signals 示例见 [`skills/eficy/SKILL.md`](skills/eficy/SKILL.md)。保存后点击文件链接或文件树，在现有文件标签页内预览。
+`.eficy` 是单文件 TSX，默认导出一个 React 组件，支持静态 `eficy`、`shadcn` 与 HTTPS ESM/CSS 导入。文件类型由最后一层后缀识别。完整 Signals 示例见 [`skills/eficy/SKILL.md`](skills/eficy/SKILL.md)。保存后点击文件链接或文件树即可预览。
 
-旧 `import * as ui from 'shadcn'` 通过独立的薄适配模块保留 `ui.Recharts` 与 `ui.Lucide`：图表从 `https://cdn.jsdelivr.net/npm/@eficy/charts@0.1.0/dist/index.js` 导入 `Recharts` namespace，standalone 使用宿主 React/ReactDOM；Lucide、ChartContainer 和 ChartTooltipContent 沿用固定 `@eficy/shadcn-ui@1.1.3` 的导出。ChartTooltip/ChartLegend 直接取自同一 `ui.Recharts` 实例，避免图表上下文分裂。该适配模块只在文件导入裸 `shadcn` 时求值；直接 HTTPS 导入的新文件不会因此额外加载旧兼容依赖。新图表 URL 尚待官方发布后进行 CDN 与浏览器实测，本地回归不代表线上可用。
+`import * as ui from 'shadcn'` 提供 `ui.Recharts` 与 `ui.Lucide`。图表使用 `@eficy/charts@0.1.0` 的 Recharts namespace，UI 与图标使用 `@eficy/shadcn-ui@1.1.3`，共享宿主 React/ReactDOM；ChartTooltip/ChartLegend 与图表使用同一实例。适配模块仅在导入 `shadcn` 时加载。图表 CDN 地址尚待发布与浏览器验证。
 
 源码变化会重新求值模块，模块级 Signal 状态可能重置；同内容更新不应重载。预览状态不是持久数据。文件读取失败、语法或渲染失败必须显示错误；真实浏览器保存更新、交互和恢复流程由集成验收确认。
 
@@ -73,7 +73,7 @@ iframe 在外层占位获得绘制机会后才创建；等待期间使用 `visib
 
 ## 内置报告与组件说明
 
-页面、报告、分析、看板和图表任务默认使用 `eficy` 技能交付。基础包承接原 shadcn 插件的默认行为：使用 shadcn 组件与 CSS、暗色语义主题和报告阅读布局；编写前读取组件指引，分析任务读取报告规范并参考对应模板，用户指定其他风格时遵循其要求。基础包包含完整组件交互说明与报告规范，以及 [经营分析](samples/analytics.eficy)、[履约分析](samples/operations.eficy) 和 [交互工作台](samples/workbench.eficy) 示例。
+`eficy` 技能用于页面、报告、分析、看板和图表，默认采用 shadcn 组件、暗色主题和报告阅读布局，也支持用户指定风格。包内提供组件说明、报告规范，以及 [经营分析](samples/analytics.eficy)、[履约分析](samples/operations.eficy) 和 [交互工作台](samples/workbench.eficy) 示例。
 
 调用 `eficy_template({ preset: "analytics" | "operations" })` 获取对应报告完整源码，按实际数据与问题修改后使用 `eficy_validate` 校验并保存。模板包含明确标注的演示数据；工具只返回源码，不写文件。
 
@@ -91,17 +91,19 @@ iframe 采用 `allow-scripts allow-forms`，不授予 same-origin 权限。`allo
 
 ## 导出报告
 
-提供 `yuri.previewActions` v1 的宿主负责操作区排版：移动端标题行、PC 原右上角悬浮位置，与源码切换并排。插件注册当前 iframe 的 `element/capture/render`，`render(surface)` 的点击回调通过 `surface.snapshot()` 获取该实例最新内容，并将 `surface.signal` 传入导出任务。卸载、源码切换和重试撤销旧按钮；两份预览互不串用快照。旧宿主没有该契约时使用原内联悬浮菜单，二者不会同时出现。
+提供 `yuri.previewActions` v1 的宿主负责操作区排版：移动端标题行、PC 右上角悬浮位置，与源码切换并排。插件注册当前 iframe 的 `element/capture/render`，`render(surface)` 的点击回调通过 `surface.snapshot()` 获取该实例最新内容，并将 `surface.signal` 传入导出任务。卸载、源码切换和重试撤销按钮；两份预览互不串用快照。未提供该契约时使用内联悬浮菜单。
 
 入口仅显示 16px 下载图标，36px 触控区域采用淡黑半透明背景，无明显边框和强阴影；「导出」文字仅保留于本地化 aria-label/title。点击后才出现菜单，忙碌圆环与成功小勾号均在入口原位显示。
 
-预览右上角悬浮的「导出」下拉菜单支持 PDF 和 PNG 长图，不占用整行、不移动报告，保留当前页面的筛选、输入和展开状态，并可取消。菜单支持 Escape 归还入口焦点、外点（含 iframe）收起；加载未就绪时禁用。通过官方 `Contract.define` / `ctx.use` 分别消费 Yuri 的两个客户端 GSAPI：`yuri.exportPDF` 和 `yuri.exportLongImage`。插件只有窗口 setup，原生渲染和保存由当前设备的宿主实现。
+预览右上角悬浮的「导出」下拉菜单支持 PDF、PNG 长图和静态 HTML 单文件，不占用整行、不移动报告，保留当前页面的筛选、输入和展开状态。菜单支持 Escape 归还入口焦点、外点（含 iframe）收起；加载未就绪时禁用。PDF/PNG 通过官方 `Contract.define` / `ctx.use` 分别消费 Yuri 的两个客户端 GSAPI：`yuri.exportPDF` 和 `yuri.exportLongImage`。插件只有窗口 setup，原生渲染和保存由当前设备的宿主实现。
 
-每个契约独立判断 `active` 且 `value.version === 1`：仅支持一种格式时只显示对应按钮；两者都不可用时隐藏整个工具栏。能力属于当前客户端设备，与连接本地、远端、LAN 或 Relay 服务无关。Electron 或安装了对应原生实现的移动壳可提供能力；纯浏览器、VS Code、旧壳及其他未提供能力的宿主隐藏入口。能力撤销/替换取消对应格式的任务；另一格式变化不打断当前任务。快照开始与调用原生保存前重新检查对应能力及 generation，关闭预览或内容更新也会取消任务。能力恢复不会重挂 iframe 或丢失交互状态。
+PDF/PNG 的契约独立判断 `active` 且 `value.version === 1`，不可用时隐藏对应菜单项。能力属于当前客户端设备，与连接本地、远端、LAN 或 Relay 服务无关。Electron 或安装了对应原生实现的移动壳可提供能力。能力撤销/替换取消对应格式的任务；另一格式变化不打断当前任务。快照开始与调用原生保存前重新检查对应能力及 generation，关闭预览或内容更新也会取消任务。能力恢复不会重挂 iframe 或丢失交互状态。
 
-结构类型在 `src/export-types.ts` 中维护，契约声明在 `src/export-contract.ts`，两个独立发布包共用实现。公开输入为 `{ snapshot: { html, width, height }, filename }`；PDF 另有可选 `pageSize: 'a4' | 'letter'`，当前按钮使用 A4。每个能力提供 `version: 1`、各自的 `limits` 和各自的方法 `exportPDF` / `exportLongImage`，调用选项为 `{ signal, onProgress }`。插件按能力限制检查 HTML UTF-8 字节、宽高和像素总数；宿主仍独立执行资源及安全校验。
+「导出 HTML」始终保留，预览就绪后可用，不依赖 PDF/PNG 契约。`src/export-html.ts` 将当前快照封装为含 UTF-8、标题、视口和 CSP 的完整 HTML 文档，通过 SDK `ctx.system.save({ name, content })` 保存；桌面端弹保存框，网页端下载。文件内嵌样式、图片和字体，保留当前筛选结果、输入值和页面尺寸，可离线阅读，不包含 React/Eficy 脚本或后续筛选交互。准备快照时可以取消；保存框打开后由保存框确认或取消，SDK 返回的布尔值决定最终状态。
 
-快照在 iframe 内通过 `html-to-image` 收集 DOM、计算样式、字体和图片（含 canvas 数据），将 SVG 的 foreignObject 内容转换为静态自包含 HTML，补齐序列化后的表单状态，再交给宿主。宿主原生导出页禁用脚本、外部网络和导航。插件不执行报告源码的第二次渲染，不生成最终 PDF/PNG，也不进行浏览器下载。
+结构类型在 `src/export-types.ts` 中维护，契约声明在 `src/export-contract.ts`。公开输入为 `{ snapshot: { html, width, height }, filename }`；PDF 另有可选 `pageSize: 'a4' | 'letter'`，当前按钮使用 A4。每个能力提供 `version: 1`、各自的 `limits` 和各自的方法 `exportPDF` / `exportLongImage`，调用选项为 `{ signal, onProgress }`。插件按能力限制检查 HTML UTF-8 字节、宽高和像素总数；宿主仍独立执行资源及安全校验。
+
+快照在 iframe 内通过 `html-to-image` 收集 DOM、计算样式、字体和图片（含 canvas 数据），将 SVG 的 foreignObject 内容转换为静态自包含 HTML，补齐序列化后的表单状态，再交给宿主。宿主原生导出页禁用脚本、外部网络和导航。插件不执行报告源码的第二次渲染，不生成最终 PDF/PNG；HTML 文件保存及浏览器下载由 SDK 处理。
 
 导出进行中仅显示双 circle 圆环与中央取消图标；真实阶段通过读屏状态播报。仅当存在有效 `completed` 与正数 `total` 时显示确定进度（百分比供读屏），其余阶段旋转而不估算，并尊重减少动画偏好。方法完成返回 `{ status: 'saved' | 'cancelled' }`，以原生终态为准：保存已经提交后收到取消请求仍短暂显示成功勾号，原生确认取消才播报取消；已销毁工具栏不更新终态。失败 reject 携带 `EXPORT_*` code；`EXPORT_ABORTED` 显示取消，其他错误显示精简失败提示，详细错误通过官方 `{{error}}` 插值保留在 title 和 aria-live 中，可重新打开菜单重试。取消后的迟到进度不更新界面。
 
@@ -140,14 +142,3 @@ ctx.add(FileIcon, { id: 'eficy', extensions: ['eficy'], svg: fileIcon });
 默认图表 fixture 用已安装 Recharts 模拟新包的 namespace/named exports；设置 `EFICY_CHARTS_FIXTURE=/path/to/charts/dist/index.js` 可用真实 charts standalone 替代。两种路径均检查 ChartTooltip/ChartLegend 与 namespace 的组件身份；fixture 仅用于测试，不是生产依赖。
 
 自动测试不能替代浏览器验收。实际宿主应检查：文件链接与侧边文件树打开后的预览、Signals 交互、HTTPS 模块/CSS 加载、源码更新、错误与修复、跨文件/会话隔离和关闭清理。外部依赖断网或 404 时须显示可恢复错误，不承诺离线可用。
-
-### 历史内置运行时验收（HTTPS 重构之前）
-
-- 插件 42 项测试、Yuri GUI 宿主 71 项相关测试通过；类型检查、Web/VS Code 构建及打包检查通过。压缩安装包约 586 KiB。
-- 安装生成的 tgz 后，仅使用 production dependencies，服务端入口、skill 版本注入、工具校验及样例文件读取通过。
-- 真实 OpenCode 服务确认 `eficy` 的 server/gui 为 active；当前会话实际加载 `eficy` skill，并执行 `eficy_validate` 的成功及失败用例。
-- 真实 Yuri Web 从文件树打开 `samples/workbench.eficy`，内联显示且没有弹窗；输入、添加、勾选、筛选、源码切换和关闭重开通过。
-- 三次磁盘修改到可见更新约 0.51 / 1.80 / 1.99 秒；同内容保存保留交互状态，源码错误保留旧画面，渲染异常修复后恢复。整组更新保持同一 iframe，load 事件为 0。这里测的是保存到显示，不能当作纯渲染耗时；宿主仍采用 2 秒前台 stat。
-- 宿主会话目录已改用当前 session 元数据，避免全局项目选择把预览路径切到其他项目；回归覆盖无关目录更新和元数据迟到。
-
-以上是当前分支 Web 实机与自动测试证据，不代表原生 Electron、iOS/Android 或 VS Code 实机验收；没有据此宣称任意用户代码的帧耗时或无限次热更新内存得到保证。

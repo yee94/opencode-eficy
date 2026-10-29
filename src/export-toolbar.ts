@@ -3,14 +3,14 @@ import type { ExportFormat, ExportProgress, ViewExportResult } from './export-ty
 export const exportMessages = {
   en: {
     exportSaved: 'File saved', exportError: 'Failed', exportFailureTitle: 'Export failed',
-    export: 'Export', exportPDF: 'Export PDF', exportPNG: 'Export PNG image', exportCancel: 'Cancel',
+    export: 'Export', exportPDF: 'Export PDF', exportPNG: 'Export PNG image', exportHTML: 'Export HTML', exportCancel: 'Cancel',
     exportPreparing: 'Preparing images and fonts…', exportCapturing: 'Capturing the report…',
     exportRendering: 'Rendering report…', exportEncoding: 'Generating file…', exportSaving: 'Saving file…', exportCancelled: 'Export cancelled',
     exportFailed: 'Export failed: {{error}}', exportWait: 'Available once the preview is ready',
   },
   zh: {
     exportSaved: '文件已保存', exportError: '失败', exportFailureTitle: '导出失败',
-    export: '导出', exportPDF: '导出 PDF', exportPNG: '导出 PNG 长图', exportCancel: '取消',
+    export: '导出', exportPDF: '导出 PDF', exportPNG: '导出 PNG 长图', exportHTML: '导出 HTML', exportCancel: '取消',
     exportPreparing: '正在准备图片与字体…', exportCapturing: '正在截取报告…',
     exportRendering: '正在渲染报告…', exportEncoding: '正在生成文件…', exportSaving: '正在保存文件…', exportCancelled: '已取消导出',
     exportFailed: '导出失败：{{error}}', exportWait: '预览准备完成后可导出',
@@ -74,7 +74,7 @@ export function createExportToolbar(options: {
     cancel.title = options.t('exportCancel');
     cancel.setAttribute('aria-label', options.t('exportCancel'));
     for (const [format, button] of buttons) {
-      button.textContent = options.t(format === 'pdf' ? 'exportPDF' : 'exportPNG');
+      button.textContent = options.t({ pdf: 'exportPDF', png: 'exportPNG', html: 'exportHTML' }[format]);
       button.disabled = !ready || !!job;
     }
   };
@@ -138,7 +138,7 @@ export function createExportToolbar(options: {
       if (!disposed) { sync(); if (restoreFocus && available.size) trigger.focus(); }
     }
   };
-  for (const format of ['pdf', 'png'] as const) {
+  for (const format of ['pdf', 'png', 'html'] as const) {
     const button = document.createElement('button');
     button.type = 'button';
     button.onclick = () => void run(format);

@@ -1,5 +1,11 @@
 # @eficy/opencode2-plugin
 
+## 0.5.0
+
+### Minor Changes
+
+- Add standalone static HTML export of the current preview, with embedded styles and resources, using the host's standard file save API.
+
 ## 0.4.5
 
 ### Patch Changes

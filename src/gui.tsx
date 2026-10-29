@@ -8,6 +8,7 @@ import exportStyles from './export-toolbar.css?inline';
 import { ExportPDF, ExportLongImage } from './export-contract';
 import { PreviewActions, type PreviewActionSurface } from './preview-actions';
 import type { ExportFormat } from './export-types';
+import { snapshotDocument } from './export-html';
 import { loadingStyles, loadingSVG } from './loading';
 
 const FileIcon = Registry.define<{ id: string; extensions: readonly string[]; svg: string; lightSvg?: string }>('yuri.file-icon');
@@ -149,14 +150,26 @@ function Preview(props: PanelProps & { version: string; theme: 'light' | 'dark' 
         ctx.toast?.show({ title: ctx.t('exportFailureTitle'), description: message, variant: 'error' });
       }, run: async (format, progress, signal) => {
         signal = actionSurface ? AbortSignal.any([signal, actionSurface.signal]) : signal;
+        const filename = (path().split(/[\\/]/).at(-1) || 'report').replace(/\.eficy$/i, '') + '.' + format;
+        const capture = () => actionSurface
+          ? actionSurface.snapshot({ onProgress: progress, signal })
+          : current.snapshot(progress, signal);
+        if (format === 'html') {
+          const snapshot = await capture();
+          signal.throwIfAborted();
+          progress({ stage: 'encoding' });
+          const content = snapshotDocument(snapshot, filename);
+          progress({ stage: 'saving' });
+          signal.throwIfAborted();
+          const saved = await ctx.system.save({ name: filename, content });
+          return { status: saved ? 'saved' : 'cancelled' };
+        }
         const read = format === 'pdf' ? pdf : longImage;
         const capability = read();
         if (capability.status !== 'active' || capability.value.version !== 1) {
           throw Object.assign(new Error('Export is no longer available.'), { code: 'EXPORT_UNSUPPORTED' });
         }
-        const snapshot = actionSurface
-          ? await actionSurface.snapshot({ onProgress: progress, signal })
-          : await current.snapshot(progress, signal);
+        const snapshot = await capture();
         signal.throwIfAborted();
         const latest = read();
         if (latest.status !== 'active' || latest.generation !== capability.generation || latest.value !== capability.value) {
@@ -168,7 +181,6 @@ function Preview(props: PanelProps & { version: string; theme: 'light' | 'dark' 
           || new TextEncoder().encode(snapshot.html).byteLength > limits.maxHTMLBytes) {
           throw Object.assign(new Error('The report exceeds this device’s export limits.'), { code: 'EXPORT_TOO_LARGE' });
         }
-        const filename = (path().split(/[\\/]/).at(-1) || 'report').replace(/\.eficy$/i, '') + '.' + format;
         const options = { signal, onProgress: progress };
         if (format === 'pdf' && 'exportPDF' in client) return client.exportPDF({ snapshot, filename, pageSize: 'a4' }, options);
         if (format === 'png' && 'exportLongImage' in client) return client.exportLongImage({ snapshot, filename }, options);
@@ -197,6 +209,7 @@ function Preview(props: PanelProps & { version: string; theme: 'light' | 'dark' 
         }
         onCleanup(() => toolbar.cancel(format));
       };
+      availability('html', true);
       createEffect(() => { const live = pdf(); availability('pdf', live.status === 'active' && live.value.version === 1); });
       createEffect(() => { const live = longImage(); availability('png', live.status === 'active' && live.value.version === 1); });
       createEffect(() => toolbar.setReady(renderReady()));

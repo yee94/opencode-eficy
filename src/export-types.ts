@@ -1,4 +1,4 @@
-export type ExportFormat = 'pdf' | 'png';
+export type ExportFormat = 'pdf' | 'png' | 'html';
 
 /** Structural copy of the public Yuri GSAPI v1 contract; no host runtime import. */
 export interface ViewExportSnapshot {
