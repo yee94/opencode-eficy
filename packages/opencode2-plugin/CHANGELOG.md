@@ -1,5 +1,11 @@
 # @eficy/opencode2-plugin
 
+## 0.5.2
+
+### Patch Changes
+
+- Make the preview export trigger background transparent by default so it blends into the preview header instead of showing a grey translucent chip.
+
 ## 0.5.1
 
 ### Patch Changes

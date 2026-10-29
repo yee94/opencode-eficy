@@ -33,7 +33,7 @@ Eficy 为 OpenCode 2 提供 `.eficy` 单文件交互预览，内置页面与报�
 
 宿主通过 `yuri.previewActions` v1 装载下载控件：PC 在右上角与源码按钮并排，手机在半浮层标题行。`src/preview-actions.ts` 声明结构契约，按当前 Solid Panel mount 注册 iframe 元素、实时 capture 和操作 UI；PDF/PNG 点击通过该 surface 的 `snapshot()` 获取最新 HTML/宽高，不截工具栏。卸载撤销按钮并取消任务。未提供此契约时使用内联悬浮入口。
 
-入口为报告预览右上角的 16px 下载图标，采用淡黑半透明底、无明显边框或阴影，不显示文字、不占用布局；本地化名称保留在 aria-label/title，点击才展开 PDF/PNG/HTML 菜单。进行中原位显示带取消按钮的圆环，成功原位短暂显示勾号；失败通过宿主全局 toast 展示本地化错误，原位保留可重试的错误图标、详细 title/aria 和简短读屏状态，不显示局部长文或错误 pill。菜单支持 Escape 收起并归还焦点、外点（含 iframe）收起；加载未就绪时禁用。控件触控目标至少 36px，支持宿主明暗色变量与减少动画偏好。
+入口为报告预览右上角的 16px 下载图标，默认背景透明、无明显边框或阴影，不显示文字、不占用布局；本地化名称保留在 aria-label/title，点击才展开 PDF/PNG/HTML 菜单。进行中原位显示带取消按钮的圆环，成功原位短暂显示勾号；失败通过宿主全局 toast 展示本地化错误，原位保留可重试的错误图标、详细 title/aria 和简短读屏状态，不显示局部长文或错误 pill。菜单支持 Escape 收起并归还焦点、外点（含 iframe）收起；加载未就绪时禁用。控件触控目标至少 36px，支持宿主明暗色变量与减少动画偏好。
 
 错误通知使用 SDK 2.2.0 官方 `ctx.toast.show({ title, description, variant: 'error' })`，标题为本地化简短提示，description 为详细错误。`ctx.toast` 不可用时通过错误图标及 title/aria 提示，支持重试。取消、abort 和销毁后的迟到失败不触发 toast；已提交的原生 saved 结果仍优先于 abort。
 

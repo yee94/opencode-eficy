@@ -2,7 +2,7 @@
 .eficy-export-toolbar.eficy-export-toolbar-hosted{position:relative;top:auto;right:auto;z-index:auto}
 .eficy-export-feedback{display:contents}
 .eficy-export-toolbar button,.eficy-export-toolbar summary{min-width:36px;min-height:36px;box-sizing:border-box;color:inherit;border:0;border-radius:8px;padding:8px 10px;font:inherit;cursor:pointer;pointer-events:auto;background:var(--surface-background,Canvas)}
-.eficy-export-toolbar summary,.eficy-export-toolbar .eficy-export-cancel{width:36px;height:36px;padding:0;background:var(--eficy-export-background,rgb(0 0 0 / 12%));color:color-mix(in srgb,var(--text-base,CanvasText) 72%,transparent);border:0;box-shadow:none}
+.eficy-export-toolbar summary,.eficy-export-toolbar .eficy-export-cancel{width:36px;height:36px;padding:0;background:var(--eficy-export-background,transparent);color:color-mix(in srgb,var(--text-base,CanvasText) 72%,transparent);border:0;box-shadow:none}
 .eficy-export-toolbar button:hover,.eficy-export-toolbar summary:hover{background:color-mix(in srgb,var(--surface-background,Canvas) 92%,currentColor)}
 .eficy-export-toolbar button:focus-visible,.eficy-export-toolbar summary:focus-visible{outline:2px solid currentColor;outline-offset:2px}
 .eficy-export-toolbar button:disabled,.eficy-export-toolbar summary[aria-disabled=true]{opacity:.5;cursor:default}
