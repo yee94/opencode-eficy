@@ -25,7 +25,6 @@ shadcn 和 charts 包使用明确的 `dist/index.js`；shadcn 的 CSS 单独导�
 - Input 使用 `value`/`onChange`；Select 和 Tabs 使用 `value`/`onValueChange`。
 - Card 使用 CardHeader/CardContent 等组合；Table 使用 TableHeader/TableBody/TableRow/TableCell 等组合。
 - 图表必须给父容器明确高度，并有文本指标或表格补充。
-- 文件保存前调用 `eficy_validate`；在浏览器确认样式、点击、筛选、Tooltip 与错误恢复。
 
 ## 数据分析报告
 

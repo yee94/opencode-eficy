@@ -24,14 +24,15 @@ description: 创建或修复 Eficy + shadcn 单文件交互页面与报告。用
 
 1. 把页面写成一个 `.eficy` 文件：纯 TSX，直接 `export default` 一个 React 组件。所有逻辑、样式类和数据留在这个文件。
 2. 从内置 `eficy` 导入 Signals，默认按已读取的 shadcn 指引组合组件；组件、图标、图表使用固定版本 HTTPS ESM 地址，CSS 使用 HTTPS 侧效 import。渲染器与 React 由插件管理，无需新插件或其他后缀。
-3. 用 `eficy_validate` 传入目标 `path` 与完整 `source`。修正返回的错误，直到 `valid: true`；UTF-8 源码最多 128 KiB。
-4. 保存同一份已验证源码到磁盘，返回 `[打开预览](相对路径.eficy)`。点击链接或侧边文件树中的文件，在现有文件标签页内渲染预览。静态校验通过只证明格式与导入边界，交互效果仍需在 GUI 预览中检查。
+3. 保存文件，返回 `[打开预览](相对路径.eficy)`，即完成默认交付。
+
+用户明确要求验证、截图，或出现具体报错时，再按问题选用 `eficy_validate` 或浏览器检查。
 
 ## 文件边界
 
-默认导出由预览负责挂载。使用 `className` 的 Tailwind/UnoCSS 工具类；外部组件样式显式导入。文件是 TSX 组件，不写文档标签、`script`、import map、`initEficy` 或 `render`。支持静态 `eficy` 与 HTTPS 模块导入；相对模块、未映射的 npm 包名、动态 import、`require`、`loadModule` 不支持。业务状态使用 Signals。
+默认导出由预览负责挂载，UTF-8 源码最多 128 KiB。使用 `className` 的 Tailwind/UnoCSS 工具类；外部组件样式显式导入。文件是 TSX 组件，不写文档标签、`script`、import map、`initEficy` 或 `render`。支持静态 `eficy` 与 HTTPS 模块导入；相对模块、未映射的 npm 包名、动态 import、`require`、`loadModule` 不支持。业务状态使用 Signals。
 
-预览在隔离 iframe 中执行，HTTPS 依赖由当前客户端直接加载。首次加载需要网络与 CDN 的 CORS 支持；源码仍在本机编译。依赖不可用时修正地址或重试，不改文件后缀。验证器只解析文本，不执行源码、不获取远程模块、不验证它们的真实导出，也不代替浏览器验收。父页面 DOM、宿主 SDK 和 Node API 不可用。
+预览在隔离 iframe 中执行，HTTPS 依赖由当前客户端直接加载。首次加载需要网络与 CDN 的 CORS 支持；源码仍在本机编译。依赖不可用时修正地址或重试，不改文件后缀。父页面 DOM、宿主 SDK 和 Node API 不可用。
 
 ## 文件链接
 

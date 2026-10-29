@@ -9,7 +9,7 @@
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugins": ["@eficy/opencode2-plugin@0.5.1"]
+  "plugins": ["@eficy/opencode2-plugin@0.5.4"]
 }
 ```
 
@@ -43,7 +43,7 @@ pnpm test
 
 向 agent 请求：
 
-> 使用 eficy 技能生成一个带计数按钮和姓名输入框的 demo.eficy，先用 eficy_validate 验证，再保存并返回链接。
+> 使用 eficy 技能生成一个带计数按钮和姓名输入框的 demo.eficy，保存并返回链接。
 
 `.eficy` 是单文件 TSX，默认导出一个 React 组件，支持静态 `eficy`、`shadcn` 与 HTTPS ESM/CSS 导入。文件类型由最后一层后缀识别。完整 Signals 示例见 [`skills/eficy/SKILL.md`](skills/eficy/SKILL.md)。保存后点击文件链接或文件树即可预览。
 
@@ -75,7 +75,7 @@ iframe 在外层占位获得绘制机会后才创建；等待期间使用 `visib
 
 `eficy` 技能用于页面、报告、分析、看板和图表，默认采用 shadcn 组件、暗色主题和报告阅读布局，也支持用户指定风格。包内提供组件说明、报告规范，以及 [经营分析](samples/analytics.eficy)、[履约分析](samples/operations.eficy) 和 [交互工作台](samples/workbench.eficy) 示例。
 
-调用 `eficy_template({ preset: "analytics" | "operations" })` 获取对应报告完整源码，按实际数据与问题修改后使用 `eficy_validate` 校验并保存。模板包含明确标注的演示数据；工具只返回源码，不写文件。
+调用 `eficy_template({ preset: "analytics" | "operations" })` 获取对应报告完整源码，按实际数据与问题修改后保存并交付链接。模板包含明确标注的演示数据；工具只返回源码，不写文件。用户要求验证或出现具体报错时，再按需使用校验工具或浏览器检查。
 
 页面内的 `<a href>` 本地文件链接通过标准 `ctx.links.open` 交给宿主：支持绝对路径、`file://` URL 和相对当前文件目录的路径，继续在文件标签页中渲染。消息中的文件链接也进入同一文件预览链路。iframe 不自行跳转到本地路径；文件不存在或当前服务无权访问时按宿主文件错误显示。
 

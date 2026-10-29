@@ -1,5 +1,11 @@
 # @eficy/opencode2-plugin
 
+## 0.5.4
+
+### Patch Changes
+
+- 简化 Eficy 默认交付流程：生成文件后直接返回链接，校验与浏览器检查改为用户要求或排查具体问题时按需使用。
+
 ## 0.5.3
 
 ### Patch Changes
