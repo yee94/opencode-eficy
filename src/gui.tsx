@@ -167,7 +167,7 @@ function Preview(props: PanelProps & { version: string; theme: 'light' | 'dark' 
       } });
       onCleanup(() => toolbar.dispose());
       const availability = (format: ExportFormat, active: boolean) => {
-        if (toolbar.setAvailable(format, active)) root.insertBefore(toolbar.element, surface);
+        if (toolbar.setAvailable(format, active)) root.append(toolbar.element);
         else toolbar.element.remove();
         onCleanup(() => toolbar.cancel(format));
       };

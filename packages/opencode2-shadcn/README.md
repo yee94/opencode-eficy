@@ -6,12 +6,12 @@
 
 ## 安装
 
-`0.3.0` 支持 HTTPS 模块与 CSS 导入，以及按客户端能力提供的 PDF/长图导出。已有安装可在连接服务的全局 `opencode.json(c)` 中更新包版本，保留其他配置；新安装参见[通用包说明](../opencode2-plugin/README.md)：
+兼容包停留在 `0.3.0`，后续不再发布新版本。请将配置中的此包替换为[通用包](../opencode2-plugin/README.md)，仍支持 `.shadcn.eficy` 文件。
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugins": ["@eficy/opencode2-shadcn@0.3.0"]
+  "plugins": ["@eficy/opencode2-plugin@0.4.1"]
 }
 ```
 

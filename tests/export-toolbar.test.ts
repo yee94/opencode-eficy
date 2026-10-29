@@ -25,7 +25,7 @@ function setup(locale: keyof typeof exportMessages = 'en') {
   const cancel = buttons[0];
   const pdf = buttons[1];
   const png = buttons[2];
-  const meter = toolbar.element.querySelector('progress')!;
+  const meter = toolbar.element.querySelector('[role=progressbar]')!;
   return { toolbar, run, cancel, pdf, png, meter, progress: (value: ExportProgress) => progress(value), finish: (saved = true) => finish({ status: saved ? 'saved' : 'cancelled' }), fail: (error = new Error('CORS blocked image')) => fail(error), signal: () => signal };
 }
 afterEach(() => {
@@ -37,17 +37,94 @@ afterEach(() => {
 });
 
 describe('native export UI lifecycle', () => {
+  it('closes on Escape, outside pointers and iframe focus without reading iframe DOM', () => {
+    const app = setup();
+    app.toolbar.setReady(true);
+    const menu = app.toolbar.element.querySelector('details')!;
+    const trigger = app.toolbar.element.querySelector('summary')!;
+    menu.open = true;
+    app.pdf.focus();
+    app.pdf.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(menu.open).toBe(false);
+    expect(document.activeElement).toBe(trigger);
+    menu.open = true;
+    document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }));
+    expect(menu.open).toBe(false);
+    const frame = document.createElement('iframe');
+    document.body.append(frame);
+    frame.focus();
+    menu.open = true;
+    const content = vi.spyOn(frame, 'contentDocument', 'get');
+    window.dispatchEvent(new Event('blur'));
+    vi.advanceTimersByTime(0);
+    expect(menu.open).toBe(false);
+    expect(document.activeElement).toBe(frame);
+    expect(content).not.toHaveBeenCalled();
+  });
+
+  it('keeps success brief and returns keyboard focus after saving', async () => {
+    const app = setup();
+    app.toolbar.setReady(true);
+    app.pdf.click();
+    expect(document.activeElement).toBe(app.cancel);
+    expect(app.cancel.textContent).toBe('');
+    app.finish();
+    await Promise.resolve();
+    expect(document.activeElement).toBe(app.toolbar.element.querySelector('summary'));
+    const trigger = app.toolbar.element.querySelector('summary')!;
+    expect(trigger.dataset.state).toBe('saved');
+    expect(trigger.querySelector('svg')).not.toBeNull();
+    expect(trigger.textContent).toBe('');
+    expect(trigger.getAttribute('aria-label')).toBe('Export');
+    expect(trigger.title).toBe('Export');
+    vi.advanceTimersByTime(1800);
+    expect(trigger.dataset.state).toBeUndefined();
+    expect(app.toolbar.element.textContent).not.toContain('File saved');
+  });
+
+  it('hides unavailable formats independently and keeps loading exports disabled', () => {
+    const app = setup();
+    const menu = app.toolbar.element.querySelector('details')!;
+    app.toolbar.element.querySelector('summary')!.click();
+    expect(menu.open).toBe(false);
+    app.toolbar.setAvailable('pdf', false);
+    expect(app.pdf.isConnected).toBe(false);
+    expect(app.png.isConnected).toBe(true);
+    app.toolbar.setAvailable('png', false);
+    expect(app.toolbar.element.hidden).toBe(true);
+    app.toolbar.setAvailable('pdf', true);
+    expect(app.toolbar.element.hidden).toBe(false);
+    expect(app.pdf.disabled).toBe(true);
+  });
+
+  it('keeps detailed failures in live feedback and title with a compact retry entry', async () => {
+    const app = setup();
+    app.toolbar.setReady(true);
+    app.pdf.click();
+    app.fail(new Error('Disk full'));
+    await Promise.resolve();
+    const outcome = app.toolbar.element.querySelector<HTMLElement>('.eficy-export-outcome')!;
+    expect(outcome.textContent).toBe('Failed');
+    expect(outcome.title).toBe('Export failed: Disk full');
+    expect(app.toolbar.element.querySelector('[role=alert]')?.className).toBe('eficy-export-sr-only');
+    app.pdf.click();
+    expect(outcome.hidden).toBe(true);
+    expect(app.run).toHaveBeenCalledTimes(2);
+  });
+
   it('uses native totals only and clears determinate progress on the next unbounded stage', async () => {
     const app = setup();
     app.toolbar.setReady(true);
     app.pdf.click();
     app.progress({ stage: 'rendering', completed: 2 });
-    expect(app.meter.hasAttribute('value')).toBe(false);
+    expect(app.meter.hasAttribute('aria-valuenow')).toBe(false);
     app.progress({ stage: 'encoding', completed: 2, total: 4 });
-    expect(app.meter.value / app.meter.max).toBe(0.5);
+    expect(app.meter.getAttribute('aria-valuenow')).toBe('50');
+    expect(app.meter.lastElementChild?.getAttribute('stroke-dasharray')).toBe('50 100');
     expect(app.toolbar.element.textContent).toContain('50%');
     app.progress({ stage: 'saving' });
-    expect(app.meter.hasAttribute('value')).toBe(false);
+    expect(app.meter.hasAttribute('aria-valuenow')).toBe(false);
+    expect(app.meter.classList.contains('is-indeterminate')).toBe(true);
     expect(app.toolbar.element.textContent).toContain('Saving file');
     app.finish();
     await Promise.resolve();
@@ -77,15 +154,16 @@ describe('native export UI lifecycle', () => {
     app.pdf.click();
     expect(app.run).toHaveBeenCalledTimes(1);
     expect(app.run.mock.calls[0][0]).toBe('pdf');
-    expect(app.meter.hasAttribute('value')).toBe(false);
+    expect(app.meter.hasAttribute('aria-valuenow')).toBe(false);
     expect(app.png.disabled).toBe(true);
     app.progress({ stage: 'encoding' });
     expect(app.toolbar.element.textContent).toContain('Generating file');
-    expect(app.meter.hidden).toBe(false);
+    expect(app.cancel.hidden).toBe(false);
+    expect(app.toolbar.element.querySelector('details')!.hidden).toBe(true);
     expect(app.toolbar.element.textContent).not.toContain('File saved');
     app.finish();
     await vi.waitFor(() => expect(app.toolbar.element.textContent).toContain('File saved'));
-    expect(app.meter.hidden).toBe(true);
+    expect(app.cancel.hidden).toBe(true);
     expect(app.png.disabled).toBe(false);
   });
 

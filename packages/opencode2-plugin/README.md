@@ -4,12 +4,12 @@
 
 ## 安装（OpenCode 2）
 
-`0.4.0` 支持 HTTPS 模块与 CSS 导入，以及按客户端能力提供的 PDF/长图导出。在连接服务的全局 `opencode.json(c)` 中加入 npm 包，保留已有配置：
+`0.4.1` 支持 HTTPS 模块与 CSS 导入，以及按客户端能力提供的 PDF/长图导出。在连接服务的全局 `opencode.json(c)` 中加入 npm 包，保留已有配置：
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugins": ["@eficy/opencode2-plugin@0.4.0"]
+  "plugins": ["@eficy/opencode2-plugin@0.4.1"]
 }
 ```
 
@@ -85,7 +85,9 @@ iframe 采用 `allow-scripts allow-forms`，不授予 same-origin 权限。`allo
 
 ## 导出报告
 
-预览顶部的「导出」支持 PDF 和 PNG 长图，保留当前页面的筛选、输入和展开状态，并可取消。通过官方 `Contract.define` / `ctx.use` 分别消费 Yuri 的两个客户端 GSAPI：`yuri.exportPDF` 和 `yuri.exportLongImage`。插件只有窗口 setup，原生渲染和保存由当前设备的宿主实现。
+入口仅显示 16px 下载图标，36px 触控区域采用淡黑半透明背景，无明显边框和强阴影；「导出」文字仅保留于本地化 aria-label/title。点击后才出现菜单，忙碌圆环与成功小勾号均在入口原位显示。
+
+预览右上角悬浮的「导出」下拉菜单支持 PDF 和 PNG 长图，不占用整行、不移动报告，保留当前页面的筛选、输入和展开状态，并可取消。菜单支持 Escape 归还入口焦点、外点（含 iframe）收起；加载未就绪时禁用。通过官方 `Contract.define` / `ctx.use` 分别消费 Yuri 的两个客户端 GSAPI：`yuri.exportPDF` 和 `yuri.exportLongImage`。插件只有窗口 setup，原生渲染和保存由当前设备的宿主实现。
 
 每个契约独立判断 `active` 且 `value.version === 1`：仅支持一种格式时只显示对应按钮；两者都不可用时隐藏整个工具栏。能力属于当前客户端设备，与连接本地、远端、LAN 或 Relay 服务无关。Electron 或安装了对应原生实现的移动壳可提供能力；纯浏览器、VS Code、旧壳及其他未提供能力的宿主隐藏入口。能力撤销/替换取消对应格式的任务；另一格式变化不打断当前任务。快照开始与调用原生保存前重新检查对应能力及 generation，关闭预览或内容更新也会取消任务。能力恢复不会重挂 iframe 或丢失交互状态。
 
@@ -93,7 +95,7 @@ iframe 采用 `allow-scripts allow-forms`，不授予 same-origin 权限。`allo
 
 快照在 iframe 内通过 `html-to-image` 收集 DOM、计算样式、字体和图片（含 canvas 数据），将 SVG 的 foreignObject 内容转换为静态自包含 HTML，补齐序列化后的表单状态，再交给宿主。宿主原生导出页禁用脚本、外部网络和导航。插件不执行报告源码的第二次渲染，不生成最终 PDF/PNG，也不进行浏览器下载。
 
-iframe 显示真实的资源准备和快照阶段；原生 `onProgress` 直接显示 `preparing`、`rendering`、`encoding`、`saving`。仅当存在有效 `completed` 与正数 `total` 时显示确定进度/百分比，其余阶段不估算。方法完成返回 `{ status: 'saved' | 'cancelled' }`，以原生终态为准：保存已经提交后收到取消请求仍显示已保存，原生确认取消才显示取消；已销毁工具栏不更新终态。失败 reject 携带 `EXPORT_*` code；`EXPORT_ABORTED` 显示取消，其他错误通过官方 `{{error}}` 插值展示并可重试。取消后的迟到进度不更新界面。
+导出进行中仅显示双 circle 圆环与中央取消图标；真实阶段通过读屏状态播报。仅当存在有效 `completed` 与正数 `total` 时显示确定进度（百分比供读屏），其余阶段旋转而不估算，并尊重减少动画偏好。方法完成返回 `{ status: 'saved' | 'cancelled' }`，以原生终态为准：保存已经提交后收到取消请求仍短暂显示成功勾号，原生确认取消才播报取消；已销毁工具栏不更新终态。失败 reject 携带 `EXPORT_*` code；`EXPORT_ABORTED` 显示取消，其他错误显示精简失败提示，详细错误通过官方 `{{error}}` 插值保留在 title 和 aria-live 中，可重新打开菜单重试。取消后的迟到进度不更新界面。
 
 ## 文件类型图标
 

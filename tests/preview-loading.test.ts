@@ -160,7 +160,7 @@ it('keeps a PDF task alive when only image capability changes, then aborts on PD
   app.setImageCapability({ status: 'active', generation: 1, value: { version: 1, limits, exportLongImage: vi.fn() } });
   expect(nativeOptions.signal!.aborted).toBe(false);
   nativeOptions.onProgress!({ stage: 'encoding', completed: 1, total: 4 });
-  expect(app.root.querySelector('progress')!.value).toBe(1);
+  expect(app.root.querySelector('[role=progressbar]')!.getAttribute('aria-valuenow')).toBe('25');
   app.setImageCapability({ status: 'inactive', reason: 'disabled' });
   expect(nativeOptions.signal!.aborted).toBe(false);
   app.setCapability({ status: 'inactive', reason: 'disabled' });

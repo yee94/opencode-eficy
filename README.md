@@ -9,13 +9,13 @@ Eficy 使用一种 `.eficy` 文件格式。通用 OpenCode 2 插件提供服务�
 
 ## 安装
 
-新安装只需通用包 `@eficy/opencode2-plugin@0.4.0`，此版本支持 HTTPS 导入和按客户端能力提供的 PDF/长图导出。将 npm 包加入连接服务的全局 `opencode.jsonc`，保留已有配置：
+新安装只需通用包 `@eficy/opencode2-plugin@0.4.1`，此版本支持 HTTPS 导入和按客户端能力提供的 PDF/长图导出。将 npm 包加入连接服务的全局 `opencode.jsonc`，保留已有配置：
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
   "plugins": [
-    "@eficy/opencode2-plugin@0.4.0"
+    "@eficy/opencode2-plugin@0.4.1"
   ]
 }
 ```
@@ -24,7 +24,7 @@ Eficy 使用一种 `.eficy` 文件格式。通用 OpenCode 2 插件提供服务�
 
 ### 单装与双装
 
-只看最后一层后缀；`report.eficy` 与 `report.shadcn.eficy` 属于同一文件格式。旧 shadcn 包保留作为兼容入口，已有安装可更新到 `@eficy/opencode2-shadcn@0.3.0`；新用户不必双装。
+只看最后一层后缀；`report.eficy` 与 `report.shadcn.eficy` 属于同一文件格式。旧 shadcn 兼容包停留在 `0.3.0`，不再发布新版本；已有安装请替换为 `@eficy/opencode2-plugin`，无需双装。后续只发布通用包。
 
 | 安装方式 | 普通 `.eficy` | `.shadcn.eficy` |
 | --- | --- | --- |
@@ -45,6 +45,8 @@ Eficy 使用一种 `.eficy` 文件格式。通用 OpenCode 2 插件提供服务�
 ## 开发结构
 
 ### 客户端导出
+
+入口为报告预览右上角的 16px 下载图标，采用淡黑半透明底、无明显边框或阴影，不显示文字、不占用布局；本地化名称保留在 aria-label/title，点击才展开 PDF/PNG 菜单。进行中原位显示带取消按钮的圆环，成功原位短暂显示勾号；失败显示精简提示，详细错误保留于 title 和读屏播报，可重新导出。菜单支持 Escape 收起并归还焦点、外点（含 iframe）收起；加载未就绪时禁用。控件触控目标至少 36px，支持宿主明暗色变量与减少动画偏好。
 
 两个包统一使用 Yuri 的独立 GSAPI `yuri.exportPDF` / `yuri.exportLongImage`，通过官方 `Contract.define` / `ctx.use` 获取当前设备的 v1 活动能力。各格式独立显示，全部不可用时隐藏工具栏；本地、远端和 Relay 连接使用相同判断。插件不含 main/Electron 导出代码。iframe 生成保留实时交互状态的自包含 HTML 快照，宿主负责原生 PDF/PNG 生成和保存。
 

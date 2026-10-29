@@ -1,5 +1,11 @@
 # @eficy/opencode2-plugin
 
+## 0.4.1
+
+### Patch Changes
+
+- Replace the full-width export toolbar with a subtle, translucent icon button floating at the preview's top-right. Open format choices on demand, show circular progress with cancellation, and use a brief success checkmark. Preserve capability detection and accessible error feedback without shifting report content.
+
 ## 0.4.0
 
 ### Minor Changes
