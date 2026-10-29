@@ -2,17 +2,20 @@
 
 shadcn 是组件写法，不是文件类型。统一生成 `page.eficy`，只需安装 Eficy 插件。
 
-## 已验证的导入
+## 固定版本导入
+
+图表地址待官方发布与 CDN 浏览器实测通过后用于线上预览；本地 fixture 回归不证明该 URL 可用。
 
 ```tsx
 import { signal, computed, component } from 'eficy';
 import { Card, CardContent, Button, Input } from 'https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.1.3/dist/index.js';
 import 'https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.1.3/dist/index.css';
 import { Activity } from 'https://esm.sh/lucide-react@0.468.0?external=react';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'https://esm.sh/recharts@2.15.4?external=react,react-dom';
+import { Recharts } from 'https://cdn.jsdelivr.net/npm/@eficy/charts@0.1.0/dist/index.js';
+const { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } = Recharts;
 ```
 
-shadcn 包使用明确的 `dist/index.js`；包根没有浏览器入口。其 CSS 单独导入一次。Lucide/Recharts 的 `external` 参数保持 React 与预览共用，避免重复 React。换用其他组件库时确认它能作为浏览器 ESM 加载，以及样式和 React 依赖契约；任意 npm 包并不天然满足这些条件。
+shadcn 和 charts 包使用明确的 `dist/index.js`；shadcn 的 CSS 单独导入一次。Lucide 的 `external` 参数与 charts standalone 的宿主 React/ReactDOM 契约保持 React 与预览共用，避免重复 React。换用其他组件库时确认它能作为浏览器 ESM 加载，以及样式和 React 依赖契约；任意 npm 包并不天然满足这些条件。
 
 直接导入的 shadcn 模块没有 `ui.Recharts`。图表及 Tooltip/Legend 都从上面的同一个 Recharts URL 导入，不混用 shadcn 内部的 ChartTooltip/ChartLegend。推荐用有明确高度的容器包 `ResponsiveContainer`，数据通过 props 传入；Tooltip 可用 Recharts 自带样式或自定义 `content`。
 

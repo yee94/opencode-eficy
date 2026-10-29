@@ -3,7 +3,7 @@
 // @ts-expect-error Browser HTTPS module.
 export * from 'https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.1.3/dist/index.js';
 // @ts-expect-error Browser HTTPS module.
-import * as Recharts from 'https://esm.sh/recharts@2.15.4?external=react,react-dom';
+import { Recharts } from 'https://cdn.jsdelivr.net/npm/@eficy/charts@0.1.0/dist/index.js';
 export { Recharts };
 export const ChartTooltip = Recharts.Tooltip;
 export const ChartLegend = Recharts.Legend;

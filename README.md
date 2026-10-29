@@ -9,13 +9,13 @@ Eficy 使用一种 `.eficy` 文件格式。通用 OpenCode 2 插件提供服务�
 
 ## 安装
 
-新安装只需通用包 `@eficy/opencode2-plugin@0.4.2`，此版本支持 HTTPS 导入和按客户端能力提供的 PDF/长图导出。将 npm 包加入连接服务的全局 `opencode.jsonc`，保留已有配置：
+新安装只需通用包 `@eficy/opencode2-plugin@0.4.3`，此版本支持 HTTPS 导入和按客户端能力提供的 PDF/长图导出。将 npm 包加入连接服务的全局 `opencode.jsonc`，保留已有配置：
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
   "plugins": [
-    "@eficy/opencode2-plugin@0.4.2"
+    "@eficy/opencode2-plugin@0.4.3"
   ]
 }
 ```

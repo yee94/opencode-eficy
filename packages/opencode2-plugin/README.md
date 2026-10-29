@@ -4,12 +4,12 @@
 
 ## 安装（OpenCode 2）
 
-`0.4.2` 支持 HTTPS 模块与 CSS 导入，以及按客户端能力提供的 PDF/长图导出。在连接服务的全局 `opencode.json(c)` 中加入 npm 包，保留已有配置：
+`0.4.3` 支持 HTTPS 模块与 CSS 导入，以及按客户端能力提供的 PDF/长图导出。在连接服务的全局 `opencode.json(c)` 中加入 npm 包，保留已有配置：
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugins": ["@eficy/opencode2-plugin@0.4.2"]
+  "plugins": ["@eficy/opencode2-plugin@0.4.3"]
 }
 ```
 
@@ -47,7 +47,7 @@ pnpm test
 
 `.eficy` 是单文件纯 TSX，直接默认导出一个 React 组件。支持静态 `eficy` 与 HTTPS ESM/CSS 导入，旧 `shadcn` 裸导入保留兼容。只看最后一层后缀；旧 `report.shadcn.eficy` 同样可打开。完整 Signals 示例见 [`skills/eficy/SKILL.md`](skills/eficy/SKILL.md)。保存后点击文件链接或文件树，在现有文件标签页内预览。
 
-旧 `import * as ui from 'shadcn'` 通过独立的薄适配模块保留 `ui.Recharts` 与 `ui.Lucide`：Recharts 固定到 `2.15.4` 的 HTTPS ESM，并 external React/ReactDOM 以复用 frame import map；Lucide、ChartContainer 和 ChartTooltipContent 沿用固定 `@eficy/shadcn-ui@1.1.3` 的导出。ChartTooltip/ChartLegend 与 `ui.Recharts` 来自同一模块，避免图表上下文分裂。该适配模块只在文件导入裸 `shadcn` 时求值；直接 HTTPS 导入的新文件不会因此额外加载旧兼容依赖。
+旧 `import * as ui from 'shadcn'` 通过独立的薄适配模块保留 `ui.Recharts` 与 `ui.Lucide`：图表从 `https://cdn.jsdelivr.net/npm/@eficy/charts@0.1.0/dist/index.js` 导入 `Recharts` namespace，standalone 使用宿主 React/ReactDOM；Lucide、ChartContainer 和 ChartTooltipContent 沿用固定 `@eficy/shadcn-ui@1.1.3` 的导出。ChartTooltip/ChartLegend 直接取自同一 `ui.Recharts` 实例，避免图表上下文分裂。该适配模块只在文件导入裸 `shadcn` 时求值；直接 HTTPS 导入的新文件不会因此额外加载旧兼容依赖。新图表 URL 尚待官方发布后进行 CDN 与浏览器实测，本地回归不代表线上可用。
 
 源码变化会重新求值模块，模块级 Signal 状态可能重置；同内容更新不应重载。预览状态不是持久数据。文件读取失败、语法或渲染失败必须显示错误；真实浏览器保存更新、交互和恢复流程由集成验收确认。
 
@@ -128,6 +128,8 @@ ctx.add(FileIcon, { id: 'eficy', extensions: ['eficy'], svg: fileIcon });
 `tests/parser.test.ts` 覆盖真实语法、默认导出、导入策略、字节边界、文档标签与 skill 示例；`tests/server.test.ts` 使用真实 SDK 定义执行 skill/tool transforms，检查 manifest 注入和工具错误结果。先构建运行时，再运行测试。
 
 `tests/legacy-report.test.ts` 使用真实内置 Eficy 编译器、上游 UI 与 Recharts，在 happy-dom 执行旧报告消费者，覆盖两个命名空间、嵌套 computed、component/batch 交互、ChartContainer 图形和 Tooltip 内容。测试只在模块解析边界用本机已安装的同版本库替代 HTTPS，布局尺寸由测试提供；CDN、import map 和实际布局仍需浏览器验收。可用 `EFICY_LEGACY_REPORT=/path/to/KF-ITERATION-REPORT.shadcn.eficy pnpm exec vitest run tests/legacy-report.test.ts` 直接运行原报告，文件按原文读取，验证四张图表与展开交互；未提供路径时跳过这一外部文件用例。
+
+默认图表 fixture 用已安装 Recharts 模拟新包的 namespace/named exports；设置 `EFICY_CHARTS_FIXTURE=/path/to/charts/dist/index.js` 可用真实 charts standalone 替代。两种路径均检查 ChartTooltip/ChartLegend 与 namespace 的组件身份；fixture 仅用于测试，不是生产依赖。
 
 自动测试不能替代浏览器验收。实际宿主应检查：文件链接与侧边文件树打开后的预览、Signals 交互、HTTPS 模块/CSS 加载、源码更新、错误与修复、跨文件/会话隔离和关闭清理。外部依赖断网或 404 时须显示可恢复错误，不承诺离线可用。
 

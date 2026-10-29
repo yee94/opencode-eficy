@@ -33,18 +33,23 @@ beforeAll(async () => {
   // Node lacks browser import maps/HTTPS imports. Resolve just these module
   // boundaries to installed real libraries; the runtime and report stay real.
   const upstream = url(readFileSync(join(directory, '../node_modules/@eficy/shadcn-ui/dist/index.js'), 'utf8'));
-  const charts = url(`export const {${Object.keys(Recharts).filter(key => key !== 'default').join(',')}} = window.legacyTestRecharts;`);
+  const charts = url(process.env.EFICY_CHARTS_FIXTURE
+    ? readFileSync(process.env.EFICY_CHARTS_FIXTURE, 'utf8')
+    : `export const Recharts = window.legacyTestRecharts; export const {${Object.keys(Recharts).filter(key => key !== 'default').join(',')}} = Recharts;`);
   const result = await build({
     stdin: { contents: assets.shadcn, loader: 'js' }, bundle: true, write: false, format: 'esm',
     plugins: [{ name: 'installed-remote-modules', setup(builder) {
       builder.onResolve({ filter: /^https:\/\// }, args => {
         if (args.path === 'https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.1.3/dist/index.js') return { path: upstream, external: true };
-        if (args.path === 'https://esm.sh/recharts@2.15.4?external=react,react-dom') return { path: charts, external: true };
+        if (args.path === 'https://cdn.jsdelivr.net/npm/@eficy/charts@0.1.0/dist/index.js') return { path: charts, external: true };
         throw new Error(`Unexpected remote dependency: ${args.path}`);
       });
     } }],
   });
   adapter = url(result.outputFiles[0].text);
+  const adapted = await loadModule(result.outputFiles[0].text);
+  expect(adapted.ChartTooltip).toBe(adapted.Recharts.Tooltip);
+  expect(adapted.ChartLegend).toBe(adapted.Recharts.Legend);
   container = document.createElement('div');
   document.body.append(container);
   root = createRoot(container);

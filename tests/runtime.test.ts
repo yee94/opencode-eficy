@@ -43,7 +43,7 @@ describe('bundled official standalone', () => {
   it('ships only a thin pinned remote compatibility adapter, not the UI/chart runtime', () => {
     expect(assets.shadcn.length).toBeLessThan(2000);
     expect(assets.shadcn).toContain('https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.1.3/dist/index.js');
-    expect(assets.shadcn).toContain('https://esm.sh/recharts@2.15.4?external=react,react-dom');
+    expect(assets.shadcn).toContain('https://cdn.jsdelivr.net/npm/@eficy/charts@0.1.0/dist/index.js');
     for (const name of ['Recharts', 'ChartTooltip', 'ChartLegend']) expect(assets.shadcn).toContain(name);
     expect(assets.shadcnCSS).toBe('https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.1.3/dist/index.css');
     expect(React.version).toBe('18.3.1');

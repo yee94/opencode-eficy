@@ -1,5 +1,11 @@
 # @eficy/opencode2-plugin
 
+## 0.4.3
+
+### Patch Changes
+
+- Load chart primitives from the single-file @eficy/charts browser bundle instead of the Recharts CDN dependency graph. Preserve the shared React runtime and matching Tooltip/Legend instances, including existing ui.Recharts reports.
+
 ## 0.4.2
 
 ### Patch Changes
