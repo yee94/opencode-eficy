@@ -1,14 +1,29 @@
 ---
 name: eficy
-description: Create or repair .eficy interactive pages, forms, tools and reports using Eficy Signals and HTTPS imports for component libraries, icons and charts.
+description: 创建或修复 Eficy + shadcn 单文件交互页面与报告。用户需要出页面、出报告、做分析、制作看板或图表时默认使用：采用 shadcn 组件、暗色语义主题和内置报告规范，交付 .eficy 文件及预览链接。包含经营分析与履约分析完整模板；用户明确指定其他风格或格式时遵循其要求。
 ---
 
-# Eficy 单文件交互预览
+# Eficy + shadcn 单文件交互预览
+
+## 默认交付方式
+
+用户需要出页面、出报告、做分析（包括数据分析、看板、图表）时，默认使用 Eficy，交付可交互的 `.eficy` 文件和预览链接。用户明确指定其他输出格式时遵循其要求；环境确实无法渲染时说明情况再提供文本结果。
+
+基础插件完整承接原 shadcn 插件的默认用法：页面采用 shadcn 组件及样式，报告采用内置报告规范。开始编写前读取[组件与图表](references/shadcn.md)和[组件组合与交互](references/components.md)，按其中的固定版本导入、组件组合和交互约定实现，无需用户额外指定 shadcn。
+
+报告和分析任务先读[报告规范](references/reports.md)。经营分析调用 `eficy_template({ preset: "analytics" })`，履约或运营分析调用 `eficy_template({ preset: "operations" })`，以完整示例为起点修改实际数据与结论；其他分析按同一规范选择结构。模板是布局和交互参考，演示数据必须替换或明确标注。
+
+## 默认风格
+
+- 默认使用 `@eficy/shadcn-ui` 组件并显式导入其 CSS；卡片、按钮、输入、选择器、标签页和表格使用组件组合，状态由 Eficy Signals 驱动。
+- 默认暗色：近黑背景、深灰卡片、细边框、亮色正文，使用 `bg-background`、`text-foreground`、`text-muted-foreground`、`border-border` 等语义样式。图表以蓝色为主序列、青色为辅助序列，状态同时给出文字。
+- 报告默认 400–600px 阅读布局、最大宽度 600px 居中、内边距 16–20px、正文 14–16px、行高 1.7–1.85；先结论再指标、图表、明细和统计口径，KPI 最多两列，宽表格仅在自身容器横滚。
+- 通用页面按用途自适应；用户明确指定亮色、其他视觉风格或宽屏布局时遵循要求。报告默认宽度不是运行时硬限制。
 
 ## 交付步骤
 
 1. 把页面写成一个 `.eficy` 文件：纯 TSX，直接 `export default` 一个 React 组件。所有逻辑、样式类和数据留在这个文件。
-2. 从内置 `eficy` 导入 Signals；组件、图标、图表使用固定版本 HTTPS ESM 地址，CSS 使用 HTTPS 侧效 import。需要 shadcn 或报告时读 [组件与图表](references/shadcn.md)。渲染器与 React 由插件管理，无需新插件或其他后缀。
+2. 从内置 `eficy` 导入 Signals，默认按已读取的 shadcn 指引组合组件；组件、图标、图表使用固定版本 HTTPS ESM 地址，CSS 使用 HTTPS 侧效 import。渲染器与 React 由插件管理，无需新插件或其他后缀。
 3. 用 `eficy_validate` 传入目标 `path` 与完整 `source`。修正返回的错误，直到 `valid: true`；UTF-8 源码最多 128 KiB。
 4. 保存同一份已验证源码到磁盘，返回 `[打开预览](相对路径.eficy)`。点击链接或侧边文件树中的文件，在现有文件标签页内渲染预览。静态校验通过只证明格式与导入边界，交互效果仍需在 GUI 预览中检查。
 

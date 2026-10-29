@@ -4,12 +4,12 @@
 
 ## 安装（OpenCode 2）
 
-`0.4.4` 支持 HTTPS 模块与 CSS 导入，以及按客户端能力提供的 PDF/长图导出。在连接服务的全局 `opencode.json(c)` 中加入 npm 包，保留已有配置：
+`0.4.5` 默认提供完整 Eficy + shadcn 页面与报告引导，支持 HTTPS 模块与 CSS 导入，以及按客户端能力提供的 PDF/长图导出。在连接服务的全局 `opencode.json(c)` 中加入 npm 包，保留已有配置：
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugins": ["@eficy/opencode2-plugin@0.4.4"]
+  "plugins": ["@eficy/opencode2-plugin@0.4.5"]
 }
 ```
 
@@ -69,7 +69,13 @@ iframe 在外层占位获得绘制机会后才创建；等待期间使用 `visib
 - CSS/渲染：在浏览器网络层暂存样式响应，或用测试组件抛出可控 Suspense Promise；错误响应/渲染异常必须露出错误与重试，成功 layout commit 才收起加载。
 - 更新/取消：第一次提交后再次阻塞模块，旧按钮仍应可点击；等待期间关闭或切换文件，再释放旧 Promise，不得改变新 Panel。
 
-生产 GUI 产物分别为 `packages/opencode2-plugin/dist/gui-experimental.cjs` 和 `packages/opencode2-shadcn/dist/gui-experimental.cjs`。共享 runtime 与两份 GUI 必须同次构建，正在修改期间的中间产物不用于验收。
+生产 GUI 产物为 `packages/opencode2-plugin/dist/gui-experimental.cjs`。运行时与 GUI 必须同次构建，正在修改期间的中间产物不用于验收。
+
+## 内置报告与组件说明
+
+页面、报告、分析、看板和图表任务默认使用 `eficy` 技能交付。基础包承接原 shadcn 插件的默认行为：使用 shadcn 组件与 CSS、暗色语义主题和报告阅读布局；编写前读取组件指引，分析任务读取报告规范并参考对应模板，用户指定其他风格时遵循其要求。基础包包含完整组件交互说明与报告规范，以及 [经营分析](samples/analytics.eficy)、[履约分析](samples/operations.eficy) 和 [交互工作台](samples/workbench.eficy) 示例。
+
+调用 `eficy_template({ preset: "analytics" | "operations" })` 获取对应报告完整源码，按实际数据与问题修改后使用 `eficy_validate` 校验并保存。模板包含明确标注的演示数据；工具只返回源码，不写文件。
 
 页面内的 `<a href>` 本地文件链接通过标准 `ctx.links.open` 交给宿主：支持绝对路径、`file://` URL 和相对当前文件目录的路径，继续在文件标签页中渲染。消息中的文件链接也进入同一文件预览链路。iframe 不自行跳转到本地路径；文件不存在或当前服务无权访问时按宿主文件错误显示。
 

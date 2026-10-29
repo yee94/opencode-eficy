@@ -8,7 +8,7 @@ const root = new URL('../', import.meta.url);
 const bundle = await build({ entryPoints: [new URL('src/frame.ts', root).pathname], bundle: true, write: false, format: 'esm', platform: 'browser' });
 const html = await readFile(new URL('tests/browser.html', root));
 const samples = Object.fromEntries(['analytics', 'operations'].map(name => [name,
-  new URL(`packages/opencode2-shadcn/samples/${name}.shadcn.eficy`, root),
+  new URL(`packages/opencode2-plugin/samples/${name}.eficy`, root),
 ]));
 if (process.env.EFICY_TEST_SOURCE) {
   if (!isAbsolute(process.env.EFICY_TEST_SOURCE)) throw new Error('EFICY_TEST_SOURCE must be an absolute file path.');

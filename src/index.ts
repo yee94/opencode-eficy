@@ -41,7 +41,7 @@ return Plugin.define({
     }));
     await ctx.tool.transform((editor) => editor.add({
       name: options.validateTool,
-      description: 'Validate complete .eficy TSX text before saving. Parses syntax and static built-in/HTTPS import boundaries without execution, network or file access.',
+      description: '保存前校验完整的 .eficy TSX 源码，检查语法以及内置模块和 HTTPS 静态导入边界；不执行源码、不访问网络或文件。',
       input: {
         type: 'object',
         properties: { path: { type: 'string' }, source: { type: 'string' } },
@@ -65,7 +65,7 @@ return Plugin.define({
       const templates = options.templates;
       await ctx.tool.transform((editor) => editor.add({
         name: options.templateTool!,
-        description: 'Return a complete, validated dark shadcn data-analysis report TSX template with local demo data, conclusions and a compact 400–600px reading layout. Customize the source, validate it and save it as one .eficy file. Does not write files.',
+        description: '返回经过校验的完整暗色 shadcn 数据分析报告模板，包含本地演示数据、结论和 400–600px 阅读布局。修改数据与源码后，校验并保存为一个 .eficy 文件；本工具只返回源码，不写入文件。',
         input: { type: 'object', properties: { preset: { type: 'string', enum: Object.keys(templates) } }, required: ['preset'], additionalProperties: false },
         execute: async (input) => {
           if (!input || typeof input !== 'object' || !('preset' in input) || typeof input.preset !== 'string' || !Object.hasOwn(templates, input.preset)) {

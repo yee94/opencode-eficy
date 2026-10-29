@@ -1,8 +1,3 @@
----
-name: eficy-shadcn
-description: Build .eficy pages, forms, tools and reports with shadcn components, icons and charts imported over HTTPS. Includes Signals and rendering rules. Prefer this skill when the user asks for a report, 报告, analysis, 分析, 数据分析, 图表, dashboard or 看板 — output an interactive .eficy report file rather than plain Markdown or static HTML.
----
-
 # Eficy + shadcn 单文件交互预览
 
 ## 何时使用
@@ -11,9 +6,9 @@ description: Build .eficy pages, forms, tools and reports with shadcn components
 
 ## 一次交付流程
 
-1. 根据用户目标选择页面结构与交互：表单、计算工具、展示页、dashboard 等都可直接用 Eficy + shadcn 实现。用户要求数据分析、图表解读或报告时，先读 [报告规范](references/reports.md)，再生成可打开的报告文件。
-2. 将组件、数据和状态写入一个 `.eficy` TSX 文件，遵循下面的渲染契约。报告可选用 `eficy_shadcn_template` 获取完整起点；其他页面直接编写，不必套用报告模板。
-3. 调用 `eficy_shadcn_validate({ path: "preview.eficy", source: "完整源码" })`，修复错误至 `valid: true`。
+1. 根据用户目标选择页面结构与交互：表单、计算工具、展示页、dashboard 等都可直接用 Eficy + shadcn 实现。用户要求数据分析、图表解读或报告时，先读 [报告规范](reports.md)，再生成可打开的报告文件。
+2. 将组件、数据和状态写入一个 `.eficy` TSX 文件，遵循下面的渲染契约。报告可选用 `eficy_template` 获取完整起点；其他页面直接编写，不必套用报告模板。
+3. 调用 `eficy_validate({ path: "preview.eficy", source: "完整源码" })`，修复错误至 `valid: true`。
 4. 将同一份源码保存到磁盘，返回 `[打开预览](preview.eficy)`。在 GUI 中检查实际交互。校验器不获取远程依赖，只验证语法、后缀和导入边界，不替代浏览器验收。
 
 ## 文件与运行时
@@ -90,4 +85,4 @@ const Preview = component(() => <main className="p-4">
 
 ## 包内运行时版本
 
-{{RUNTIME_VERSIONS}}
+参见主 skill 注入的运行时版本；固定版本 HTTPS 导入方式见[组件与图表](shadcn.md)。

@@ -1,14 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
 import { LinkHandler, Panel, type Registry } from '@opencode/plugin/gui';
 import generic from '../packages/opencode2-plugin/src/gui';
-import shadcn from '../packages/opencode2-shadcn/src/gui';
 
 vi.mock('@opencode/plugin/gui', async (importOriginal) => {
   const sdk = await importOriginal<typeof import('@opencode/plugin/gui')>();
   return { ...sdk, bindPlugin: (component: unknown) => component };
 });
 
-const plugins = { eficy: generic, 'eficy-shadcn': shadcn };
+const plugins = { eficy: generic };
 type PluginID = keyof typeof plugins;
 
 function host(ids: PluginID[]) {
@@ -47,31 +46,30 @@ function host(ids: PluginID[]) {
   return { click, open, tabs, items, stored, entries };
 }
 
-describe('GUI plugin coexistence with OpenCode routing and panel contracts', () => {
-  it('ships both standalone packages without a plugin main entry', () => {
+describe('GUI plugin routing and panel contracts', () => {
+  it('ships without a plugin main entry', () => {
     expect(generic.main).toBeUndefined();
-    expect(shadcn.main).toBeUndefined();
   });
   it('registers the final file extension for compound shadcn preview names', () => {
-    const app = host(['eficy-shadcn']);
+    const app = host(['eficy']);
     const icon = app.entries.find(entry => entry.registry === 'yuri.file-icon')!.value as { extensions: string[] };
     expect(icon.extensions).toEqual(['eficy']);
     app.click('report.shadcn.eficy');
-    expect(app.tabs()).toEqual(['eficy-shadcn:report.shadcn.eficy']);
+    expect(app.tabs()).toEqual(['eficy:report.shadcn.eficy']);
   });
-  it.each<PluginID[]>([['eficy', 'eficy-shadcn'], ['eficy-shadcn', 'eficy']])('routes once in loading order %j', (...ids) => {
-    const app = host(ids);
+  it('routes each file once and reuses its existing tab', () => {
+    const app = host(['eficy']);
     app.click('report.shadcn.eficy');
     expect(app.open).toHaveBeenCalledTimes(1);
-    expect(app.tabs()).toEqual(['eficy-shadcn:report.shadcn.eficy']);
+    expect(app.tabs()).toEqual(['eficy:report.shadcn.eficy']);
     app.click('page.eficy');
     expect(app.open).toHaveBeenCalledTimes(2);
-    expect(app.tabs().sort()).toEqual(['eficy-shadcn:page.eficy', 'eficy-shadcn:report.shadcn.eficy']);
+    expect(app.tabs().sort()).toEqual(['eficy:page.eficy', 'eficy:report.shadcn.eficy']);
     app.click('report.shadcn.eficy');
     expect(app.tabs()).toHaveLength(2);
-    expect(app.items(Panel).map(entry => entry.value.mobile?.title).sort()).toEqual(['Eficy', 'Eficy']);
+    expect(app.items(Panel).map(entry => entry.value.mobile?.title).sort()).toEqual(['Eficy']);
     expect(app.entries.filter(entry => entry.registry === 'yuri.file-icon').map(entry => (entry.value as { id: string }).id).sort())
-      .toEqual(['eficy', 'eficy-shadcn']);
+      .toEqual(['eficy']);
   });
 
   it('lets the generic plugin preview both suffixes on its own', () => {
@@ -81,24 +79,16 @@ describe('GUI plugin coexistence with OpenCode routing and panel contracts', () 
     expect(app.tabs()).toEqual(['eficy:page.eficy', 'eficy:report.shadcn.eficy']);
   });
 
-  it('previews ordinary and legacy compound filenames with the standalone shadcn plugin', () => {
-    const app = host(['eficy-shadcn']);
-    app.click('page.eficy');
-    app.click('report.shadcn.eficy');
-    expect(app.open).toHaveBeenCalledTimes(2);
-    expect(app.tabs()).toEqual(['eficy-shadcn:page.eficy', 'eficy-shadcn:report.shadcn.eficy']);
-  });
-
   it('leaves remote URLs and fragment links to the host', () => {
-    const app = host(['eficy', 'eficy-shadcn']);
+    const app = host(['eficy']);
     for (const href of ['https://example.com/report.shadcn.eficy', '#report.shadcn.eficy', '?page.eficy']) app.click(href);
     expect(app.open).not.toHaveBeenCalled();
   });
 
-  it('preserves old generic tabs rather than pretending priority migrates their stored keys', () => {
-    const app = host(['eficy', 'eficy-shadcn']);
+  it('reuses stored generic tabs', () => {
+    const app = host(['eficy']);
     app.stored.add('eficy:report.shadcn.eficy');
     app.click('report.shadcn.eficy');
-    expect(app.tabs().sort()).toEqual(['eficy-shadcn:report.shadcn.eficy', 'eficy:report.shadcn.eficy']);
+    expect(app.tabs()).toEqual(['eficy:report.shadcn.eficy']);
   });
 });

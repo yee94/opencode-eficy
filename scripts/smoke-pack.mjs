@@ -22,6 +22,9 @@ try {
     assert(entries.some(entry => entry.startsWith('package/skills/')), 'Missing skills');
     if (name.startsWith('eficy-opencode2-plugin-')) {
       assert(entries.includes('package/skills/eficy/references/shadcn.md'), 'Missing general Eficy shadcn reference');
+      for (const file of ['skills/eficy/references/components.md', 'skills/eficy/references/reports.md', 'samples/analytics.eficy', 'samples/operations.eficy']) {
+        assert(entries.includes(`package/${file}`), `Missing migrated shadcn content: ${file}`);
+      }
     }
     assert(entries.some(entry => entry.startsWith('package/samples/')), 'Missing samples');
     assert(!entries.some(entry => /^package\/(src|node_modules|tests)\//.test(entry)), 'Source or dependencies leaked into tarball');
@@ -56,6 +59,7 @@ try {
         assert.equal(result.valid, true, sample);
       }
       const template = tools.find(tool => tool.name.endsWith('_template'));
+      assert(template, 'Missing unified report template tool');
       if (template) for (const preset of template.input.properties.preset.enum) {
         const result = JSON.parse((await template.execute({preset})).content);
         assert(result.source && result.path, 'Missing packaged template');

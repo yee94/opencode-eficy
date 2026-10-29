@@ -1,5 +1,11 @@
 # @eficy/opencode2-plugin
 
+## 0.4.5
+
+### Patch Changes
+
+- 基础插件完整承接原 shadcn 插件：页面、报告和分析默认采用 Eficy + shadcn，使用暗色语义主题与报告阅读布局；技能和工具说明统一中文。内置完整组件交互说明、报告规范、analytics 经营分析和 operations 履约分析示例，并提供统一的 eficy_template 工具。删除旧独立插件包及其构建发布入口。
+
 ## 0.4.4
 
 ### Patch Changes
