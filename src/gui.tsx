@@ -6,6 +6,7 @@ import fileIcon from './file-icon.svg?raw';
 import { createExportToolbar, exportMessages } from './export-toolbar';
 import exportStyles from './export-toolbar.css?inline';
 import { ExportPDF, ExportLongImage } from './export-contract';
+import { PreviewActions, type PreviewActionSurface } from './preview-actions';
 import type { ExportFormat } from './export-types';
 import { loadingStyles, loadingSVG } from './loading';
 
@@ -53,6 +54,7 @@ function Preview(props: PanelProps & { version: string; theme: 'light' | 'dark' 
   const state = createMemo(() => props.screen.file.get(path()));
   const pdf = ctx.use(ExportPDF);
   const longImage = ctx.use(ExportLongImage);
+  const previewActions = ctx.use(PreviewActions);
 
   createEffect(() => {
     identity();
@@ -141,15 +143,20 @@ function Preview(props: PanelProps & { version: string; theme: 'light' | 'dark' 
     createEffect(() => {
       const current = mounted();
       if (!current) return;
+      const actions = previewActions();
+      let actionSurface: PreviewActionSurface | undefined;
       const toolbar = createExportToolbar({ t: (key, params) => ctx.t(key, params), onError: message => {
         ctx.toast?.show({ title: ctx.t('exportFailureTitle'), description: message, variant: 'error' });
       }, run: async (format, progress, signal) => {
+        signal = actionSurface ? AbortSignal.any([signal, actionSurface.signal]) : signal;
         const read = format === 'pdf' ? pdf : longImage;
         const capability = read();
         if (capability.status !== 'active' || capability.value.version !== 1) {
           throw Object.assign(new Error('Export is no longer available.'), { code: 'EXPORT_UNSUPPORTED' });
         }
-        const snapshot = await current.snapshot(progress, signal);
+        const snapshot = actionSurface
+          ? await actionSurface.snapshot({ onProgress: progress, signal })
+          : await current.snapshot(progress, signal);
         signal.throwIfAborted();
         const latest = read();
         if (latest.status !== 'active' || latest.generation !== capability.generation || latest.value !== capability.value) {
@@ -168,9 +175,26 @@ function Preview(props: PanelProps & { version: string; theme: 'light' | 'dark' 
         throw Object.assign(new Error('This export format is unavailable.'), { code: 'EXPORT_UNSUPPORTED' });
       } });
       onCleanup(() => toolbar.dispose());
+      const hosted = actions.status === 'active' && actions.value.version === 1;
+      if (hosted) {
+        onCleanup(actions.value.register({
+          element: current.element,
+          capture: ({ onProgress, signal }) => current.snapshot(onProgress ?? (() => {}), signal),
+          render: surface => {
+            actionSurface = surface;
+            toolbar.element.classList.add('eficy-export-toolbar-hosted');
+            surface.signal.addEventListener('abort', toolbar.dispose, { once: true });
+            onCleanup(() => surface.signal.removeEventListener('abort', toolbar.dispose));
+            return toolbar.element;
+          },
+        }));
+      }
       const availability = (format: ExportFormat, active: boolean) => {
-        if (toolbar.setAvailable(format, active)) root.append(toolbar.element);
-        else toolbar.element.remove();
+        const visible = toolbar.setAvailable(format, active);
+        if (!hosted) {
+          if (visible) root.append(toolbar.element);
+          else toolbar.element.remove();
+        }
         onCleanup(() => toolbar.cancel(format));
       };
       createEffect(() => { const live = pdf(); availability('pdf', live.status === 'active' && live.value.version === 1); });

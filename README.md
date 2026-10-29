@@ -9,13 +9,13 @@ Eficy 使用一种 `.eficy` 文件格式。通用 OpenCode 2 插件提供服务�
 
 ## 安装
 
-新安装只需通用包 `@eficy/opencode2-plugin@0.4.3`，此版本支持 HTTPS 导入和按客户端能力提供的 PDF/长图导出。将 npm 包加入连接服务的全局 `opencode.jsonc`，保留已有配置：
+新安装只需通用包 `@eficy/opencode2-plugin@0.4.4`，此版本支持 HTTPS 导入和按客户端能力提供的 PDF/长图导出。将 npm 包加入连接服务的全局 `opencode.jsonc`，保留已有配置：
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
   "plugins": [
-    "@eficy/opencode2-plugin@0.4.3"
+    "@eficy/opencode2-plugin@0.4.4"
   ]
 }
 ```
@@ -45,6 +45,8 @@ Eficy 使用一种 `.eficy` 文件格式。通用 OpenCode 2 插件提供服务�
 ## 开发结构
 
 ### 客户端导出
+
+新版宿主通过 `yuri.previewActions` v1 装载下载控件：PC 在原右上角悬浮区与源码按钮并排，手机在半浮层标题行。`src/preview-actions.ts` 声明结构契约，按当前 Solid Panel mount 注册 iframe 元素、实时 capture 和操作 UI；点击通过该 surface 的 `snapshot()` 获取最新 HTML/宽高，不截工具栏。卸载撤销按钮并取消任务。未提供此契约的旧宿主继续使用下述内联悬浮入口，只生成一份菜单；已发布 0.4.2 插件仍可由新宿主正常预览，宿主不代造下载按钮。
 
 入口为报告预览右上角的 16px 下载图标，采用淡黑半透明底、无明显边框或阴影，不显示文字、不占用布局；本地化名称保留在 aria-label/title，点击才展开 PDF/PNG 菜单。进行中原位显示带取消按钮的圆环，成功原位短暂显示勾号；失败通过宿主全局 toast 展示本地化错误，原位保留可重试的错误图标、详细 title/aria 和简短读屏状态，不显示局部长文或错误 pill。菜单支持 Escape 收起并归还焦点、外点（含 iframe）收起；加载未就绪时禁用。控件触控目标至少 36px，支持宿主明暗色变量与减少动画偏好。
 

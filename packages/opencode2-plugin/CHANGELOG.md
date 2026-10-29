@@ -1,5 +1,11 @@
 # @eficy/opencode2-plugin
 
+## 0.4.4
+
+### Patch Changes
+
+- Mount export controls in the host preview actions slot, capture the current preview through its snapshot callback, and cancel exports when the surface is disposed. Preserve the inline toolbar fallback for older hosts.
+
 ## 0.4.3
 
 ### Patch Changes

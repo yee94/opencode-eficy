@@ -4,12 +4,12 @@
 
 ## 安装（OpenCode 2）
 
-`0.4.3` 支持 HTTPS 模块与 CSS 导入，以及按客户端能力提供的 PDF/长图导出。在连接服务的全局 `opencode.json(c)` 中加入 npm 包，保留已有配置：
+`0.4.4` 支持 HTTPS 模块与 CSS 导入，以及按客户端能力提供的 PDF/长图导出。在连接服务的全局 `opencode.json(c)` 中加入 npm 包，保留已有配置：
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugins": ["@eficy/opencode2-plugin@0.4.3"]
+  "plugins": ["@eficy/opencode2-plugin@0.4.4"]
 }
 ```
 
@@ -84,6 +84,8 @@ iframe 在外层占位获得绘制机会后才创建；等待期间使用 `visib
 iframe 采用 `allow-scripts allow-forms`，不授予 same-origin 权限。`allow-forms` 让 React 的 `onSubmit` 可以收到原生表单事件，CSP 的 `form-action 'none'` 仍禁止网络表单提交。消息通过 source 与独立 frameId 校验；opaque origin 的首次握手只能使用通配目标，不传递宿主凭据。
 
 ## 导出报告
+
+提供 `yuri.previewActions` v1 的宿主负责操作区排版：移动端标题行、PC 原右上角悬浮位置，与源码切换并排。插件注册当前 iframe 的 `element/capture/render`，`render(surface)` 的点击回调通过 `surface.snapshot()` 获取该实例最新内容，并将 `surface.signal` 传入导出任务。卸载、源码切换和重试撤销旧按钮；两份预览互不串用快照。旧宿主没有该契约时使用原内联悬浮菜单，二者不会同时出现。
 
 入口仅显示 16px 下载图标，36px 触控区域采用淡黑半透明背景，无明显边框和强阴影；「导出」文字仅保留于本地化 aria-label/title。点击后才出现菜单，忙碌圆环与成功小勾号均在入口原位显示。
 

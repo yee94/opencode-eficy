@@ -2,6 +2,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { createRoot, createSignal } from 'solid-js';
 import { Panel, type PanelProps, type Live, type Toasts } from '@opencode/plugin/gui';
 import { ExportPDF, ExportLongImage } from '../src/export-contract';
+import { PreviewActions, type PreviewActionsAPI } from '../src/preview-actions';
 import type { ExportPDFAPI, ExportLongImageAPI, ViewExportOptions, ViewExportResult } from '../src/export-types';
 import plugin from '../packages/opencode2-plugin/src/gui';
 
@@ -20,12 +21,13 @@ afterEach(() => { cleanups.splice(0).forEach(cleanup => cleanup()); document.bod
 const limits = { maxHTMLBytes: 16 * 1024 * 1024, maxWidth: 8192, maxHeight: 32768, maxPixels: 16777216 };
 const snapshot = { html: '<div>report</div>', width: 600, height: 1200 };
 
-function mount(sync = vi.fn(() => new Promise<void>(() => {}))) {
+function mount(sync = vi.fn(() => new Promise<void>(() => {})), actions?: PreviewActionsAPI) {
   const [capability, setCapability] = createSignal<Live<ExportPDFAPI>>({ status: 'inactive', reason: 'disabled' });
   const [imageCapability, setImageCapability] = createSignal<Live<ExportLongImageAPI>>({ status: 'inactive', reason: 'disabled' });
   context.use.mockImplementation(token => {
     if (token.id === ExportPDF.id) return capability;
     if (token.id === ExportLongImage.id) return imageCapability;
+    if (token.id === PreviewActions.id) return () => actions ? { status: 'active', generation: 1, value: actions } : { status: 'pending' };
     throw new Error(`Unexpected contract: ${token.id}`);
   });
   const paints: FrameRequestCallback[] = [];
@@ -60,6 +62,40 @@ it('omits export controls without an active client capability, independently of 
     expect(root.querySelector('.eficy-export-toolbar')).toBeNull();
     expect(frame.style.visibility).toBe('visible');
   }
+});
+
+it('mounts one toolbar in the host slot and uses the instance snapshot callback on each click', async () => {
+  const slot = document.createElement('div'); document.body.append(slot);
+  const controller = new AbortController();
+  const capture = vi.fn();
+  let disposeSlot = () => {};
+  const actions: PreviewActionsAPI = { version: 1, register(input) {
+    const element = input.render({ element: input.element, signal: controller.signal, snapshot: options => { capture(); return input.capture(options ?? {}); } });
+    slot.append(element);
+    disposeSlot = () => { controller.abort(); element.remove(); };
+    return disposeSlot;
+  } };
+  const { root, paint, setState, receive, setCapability, dispose } = mount(undefined, actions);
+  paint(); paint();
+  const frame = root.querySelector('iframe')!;
+  const send = vi.spyOn(frame.contentWindow!, 'postMessage').mockImplementation(() => {});
+  const save = vi.fn(async (): Promise<ViewExportResult> => ({ status: 'saved' }));
+  setCapability({ status: 'active', generation: 1, value: { version: 1, limits, exportPDF: save } });
+  setState({ loaded: true, content: { content: 'source' } });
+  receive('ready'); receive('status', { revision: 1, status: 'committed' });
+  expect(root.querySelector('.eficy-export-toolbar')).toBeNull();
+  expect(slot.querySelectorAll('.eficy-export-toolbar-hosted')).toHaveLength(1);
+  expect(capture).not.toHaveBeenCalled();
+  for (const html of ['first interaction', 'latest interaction']) {
+    slot.querySelector<HTMLButtonElement>('.eficy-export-choices button')!.click();
+    const request = send.mock.calls.filter(([message]) => message.type === 'snapshot').at(-1)![0];
+    receive('snapshot-result', { requestId: request.requestId, snapshot: { ...snapshot, html } });
+    await vi.waitFor(() => expect(save).toHaveBeenLastCalledWith(expect.objectContaining({ snapshot: { ...snapshot, html } }), expect.anything()));
+  }
+  expect(capture).toHaveBeenCalledTimes(2);
+  dispose();
+  expect(slot.children).toHaveLength(0);
+  expect(controller.signal.aborted).toBe(true);
 });
 
 it('shows native export only while available and cancels a snapshot when that capability is revoked', async () => {
