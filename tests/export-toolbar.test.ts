@@ -3,7 +3,7 @@ import { createExportToolbar, exportMessages } from '../src/export-toolbar';
 import type { ExportProgress, ViewExportResult } from '../src/export-types';
 
 const cleanups: (() => void)[] = [];
-function setup(locale: keyof typeof exportMessages = 'en') {
+function setup(locale: keyof typeof exportMessages = 'en', notifications = true) {
   vi.useFakeTimers();
   let finish!: (result: ViewExportResult) => void;
   let fail!: (error: Error) => void;
@@ -13,9 +13,11 @@ function setup(locale: keyof typeof exportMessages = 'en') {
     progress = notify; signal = abort;
     return new Promise<ViewExportResult>((resolve, reject) => { finish = resolve; fail = reject; });
   });
+  const onError = vi.fn();
   const toolbar = createExportToolbar({
     t: (key, params = {}) => exportMessages[locale][key as keyof typeof exportMessages.en].replace(/\{\{(\w+)\}\}/g, (match, name: string) => String(params[name] ?? match)),
     run,
+    onError: notifications ? onError : undefined,
   });
   toolbar.setAvailable('pdf', true);
   toolbar.setAvailable('png', true);
@@ -26,7 +28,7 @@ function setup(locale: keyof typeof exportMessages = 'en') {
   const pdf = buttons[1];
   const png = buttons[2];
   const meter = toolbar.element.querySelector('[role=progressbar]')!;
-  return { toolbar, run, cancel, pdf, png, meter, progress: (value: ExportProgress) => progress(value), finish: (saved = true) => finish({ status: saved ? 'saved' : 'cancelled' }), fail: (error = new Error('CORS blocked image')) => fail(error), signal: () => signal };
+  return { toolbar, run, onError, cancel, pdf, png, meter, progress: (value: ExportProgress) => progress(value), finish: (saved = true) => finish({ status: saved ? 'saved' : 'cancelled' }), fail: (error = new Error('CORS blocked image')) => fail(error), signal: () => signal };
 }
 afterEach(() => {
   cleanups.splice(0).forEach(cleanup => cleanup());
@@ -97,18 +99,26 @@ describe('native export UI lifecycle', () => {
     expect(app.pdf.disabled).toBe(true);
   });
 
-  it('keeps detailed failures in live feedback and title with a compact retry entry', async () => {
+  it('notifies once with details and keeps only a compact accessible retry icon', async () => {
     const app = setup();
     app.toolbar.setReady(true);
     app.pdf.click();
     app.fail(new Error('Disk full'));
     await Promise.resolve();
-    const outcome = app.toolbar.element.querySelector<HTMLElement>('.eficy-export-outcome')!;
-    expect(outcome.textContent).toBe('Failed');
-    expect(outcome.title).toBe('Export failed: Disk full');
-    expect(app.toolbar.element.querySelector('[role=alert]')?.className).toBe('eficy-export-sr-only');
+    const trigger = app.toolbar.element.querySelector('summary')!;
+    expect(app.onError).toHaveBeenCalledExactlyOnceWith('Export failed: Disk full');
+    expect(trigger.dataset.state).toBe('error');
+    expect(trigger.textContent).toBe('');
+    expect(trigger.title).toBe('Export failed: Disk full');
+    expect(trigger.getAttribute('aria-label')).toContain('Disk full');
+    expect(app.toolbar.element.querySelector('[role=status]')?.textContent).toBe('Failed');
+    expect(app.toolbar.element.querySelector('.eficy-export-outcome')).toBeNull();
+    app.toolbar.refresh();
+    expect(trigger.title).toBe('Export failed: Disk full');
+    expect(app.onError).toHaveBeenCalledTimes(1);
     app.pdf.click();
-    expect(outcome.hidden).toBe(true);
+    expect(trigger.dataset.state).toBeUndefined();
+    expect(trigger.title).toBe('Export');
     expect(app.run).toHaveBeenCalledTimes(2);
   });
 
@@ -140,10 +150,11 @@ describe('native export UI lifecycle', () => {
     await Promise.resolve();
     expect(app.toolbar.element.textContent).toContain('Export cancelled');
     expect(app.toolbar.element.querySelector('[role=alert]')).toBeNull();
+    expect(app.onError).not.toHaveBeenCalled();
     app.pdf.click();
     app.fail(Object.assign(new Error('Disk full'), { code: 'EXPORT_SAVE_FAILED' }));
     await Promise.resolve();
-    expect(app.toolbar.element.querySelector('[role=alert]')?.textContent).toContain('Disk full');
+    expect(app.onError).toHaveBeenCalledExactlyOnceWith('Export failed: Disk full');
     expect(app.pdf.disabled).toBe(false);
   });
 
@@ -165,6 +176,36 @@ describe('native export UI lifecycle', () => {
     await vi.waitFor(() => expect(app.toolbar.element.textContent).toContain('File saved'));
     expect(app.cancel.hidden).toBe(true);
     expect(app.png.disabled).toBe(false);
+  });
+
+  it.each(['cancel', 'not-ready', 'revoked', 'dispose'] as const)('suppresses late failures after %s', async action => {
+    const app = setup();
+    app.toolbar.setReady(true);
+    app.pdf.click();
+    if (action === 'cancel') app.cancel.click();
+    if (action === 'not-ready') app.toolbar.setReady(false);
+    if (action === 'revoked') app.toolbar.setAvailable('pdf', false);
+    if (action === 'dispose') app.toolbar.dispose();
+    app.fail(new Error('Late native error'));
+    await Promise.resolve();
+    expect(app.onError).not.toHaveBeenCalled();
+    expect(app.toolbar.element.querySelector('summary')!.dataset.state).toBeUndefined();
+  });
+
+  it.each([false, true])('keeps retry accessible when notification support is absent or throws (%s)', async notifications => {
+    const app = setup('en', notifications);
+    app.onError.mockImplementation(() => { throw new Error('Host unavailable'); });
+    app.toolbar.setReady(true);
+    app.pdf.click();
+    app.fail(new Error('Disk full'));
+    await Promise.resolve();
+    const trigger = app.toolbar.element.querySelector('summary')!;
+    expect(trigger.title).toBe('Export failed: Disk full');
+    expect(trigger.dataset.state).toBe('error');
+    expect(app.toolbar.element.textContent).not.toContain('Disk full');
+    expect(app.toolbar.element.querySelector('.eficy-export-outcome')).toBeNull();
+    app.pdf.click();
+    expect(app.run).toHaveBeenCalledTimes(2);
   });
 
   it('reports cancellation from the native save dialog', async () => {
@@ -236,7 +277,7 @@ describe('native export UI lifecycle', () => {
     app.pdf.click();
     app.fail(Object.assign(new Error('Disk full / 磁盘已满'), { code: 'EXPORT_SAVE_FAILED' }));
     await Promise.resolve();
-    expect(app.toolbar.element.querySelector('[role=alert]')?.textContent).toBe(locale === 'en'
+    expect(app.onError).toHaveBeenCalledExactlyOnceWith(locale === 'en'
       ? 'Export failed: Disk full / 磁盘已满'
       : '导出失败：Disk full / 磁盘已满');
     expect(app.toolbar.element.textContent).not.toContain('{error}');
@@ -248,7 +289,7 @@ describe('native export UI lifecycle', () => {
     app.pdf.click();
     app.fail();
     await Promise.resolve();
-    expect(app.toolbar.element.querySelector('[role=alert]')?.textContent).toContain('CORS blocked image');
+    expect(app.onError).toHaveBeenCalledExactlyOnceWith('Export failed: CORS blocked image');
     expect(app.toolbar.element.textContent).not.toContain('File saved');
     app.pdf.click();
     expect(app.run).toHaveBeenCalledTimes(2);

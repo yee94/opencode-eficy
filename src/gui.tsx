@@ -141,7 +141,9 @@ function Preview(props: PanelProps & { version: string; theme: 'light' | 'dark' 
     createEffect(() => {
       const current = mounted();
       if (!current) return;
-      const toolbar = createExportToolbar({ t: (key, params) => ctx.t(key, params), run: async (format, progress, signal) => {
+      const toolbar = createExportToolbar({ t: (key, params) => ctx.t(key, params), onError: message => {
+        ctx.toast?.show({ title: ctx.t('exportFailureTitle'), description: message, variant: 'error' });
+      }, run: async (format, progress, signal) => {
         const read = format === 'pdf' ? pdf : longImage;
         const capability = read();
         if (capability.status !== 'active' || capability.value.version !== 1) {

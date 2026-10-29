@@ -2,14 +2,14 @@ import type { ExportFormat, ExportProgress, ViewExportResult } from './export-ty
 
 export const exportMessages = {
   en: {
-    exportSaved: 'File saved', exportError: 'Failed',
+    exportSaved: 'File saved', exportError: 'Failed', exportFailureTitle: 'Export failed',
     export: 'Export', exportPDF: 'Export PDF', exportPNG: 'Export PNG image', exportCancel: 'Cancel',
     exportPreparing: 'Preparing images and fonts…', exportCapturing: 'Capturing the report…',
     exportRendering: 'Rendering report…', exportEncoding: 'Generating file…', exportSaving: 'Saving file…', exportCancelled: 'Export cancelled',
     exportFailed: 'Export failed: {{error}}', exportWait: 'Available once the preview is ready',
   },
   zh: {
-    exportSaved: '文件已保存', exportError: '失败',
+    exportSaved: '文件已保存', exportError: '失败', exportFailureTitle: '导出失败',
     export: '导出', exportPDF: '导出 PDF', exportPNG: '导出 PNG 长图', exportCancel: '取消',
     exportPreparing: '正在准备图片与字体…', exportCapturing: '正在截取报告…',
     exportRendering: '正在渲染报告…', exportEncoding: '正在生成文件…', exportSaving: '正在保存文件…', exportCancelled: '已取消导出',
@@ -20,6 +20,7 @@ export const exportMessages = {
 export function createExportToolbar(options: {
   t: (key: string, params?: Record<string, string | number>) => string;
   run: (format: ExportFormat, progress: (value: ExportProgress) => void, signal: AbortSignal) => Promise<ViewExportResult>;
+  onError?: (message: string) => void;
 }) {
   const element = document.createElement('div');
   element.className = 'eficy-export-toolbar';
@@ -45,9 +46,6 @@ export function createExportToolbar(options: {
   cross.setAttribute('aria-hidden', 'true');
   cross.innerHTML = '<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><path d="m7 7 10 10M17 7 7 17"/></svg>';
   cancel.append(meter, cross);
-  const outcome = document.createElement('span');
-  outcome.className = 'eficy-export-outcome';
-  outcome.hidden = true;
   const menu = document.createElement('details');
   menu.className = 'eficy-export-menu';
   const trigger = document.createElement('summary');
@@ -56,7 +54,7 @@ export function createExportToolbar(options: {
   const choices = document.createElement('div');
   choices.className = 'eficy-export-choices';
   menu.append(trigger, choices);
-  feedback.append(status, cancel, outcome);
+  feedback.append(status, cancel);
   element.append(feedback, menu);
   let ready = false;
   let disposed = false;
@@ -64,14 +62,15 @@ export function createExportToolbar(options: {
   let jobFormat: ExportFormat | undefined;
   let reset: ReturnType<typeof setTimeout> | undefined;
   let blurCheck: ReturnType<typeof setTimeout> | undefined;
+  let failure = '';
   const available = new Set<ExportFormat>();
   const buttons = new Map<ExportFormat, HTMLButtonElement>();
   const sync = () => {
     element.hidden = !available.size;
     menu.hidden = !!job;
     trigger.setAttribute('aria-disabled', String(!ready || !!job));
-    trigger.title = options.t(ready ? 'export' : 'exportWait');
-    trigger.setAttribute('aria-label', options.t('export'));
+    trigger.title = failure || options.t(ready ? 'export' : 'exportWait');
+    trigger.setAttribute('aria-label', failure ? `${options.t('export')}: ${failure}` : options.t('export'));
     cancel.title = options.t('exportCancel');
     cancel.setAttribute('aria-label', options.t('exportCancel'));
     for (const [format, button] of buttons) {
@@ -102,7 +101,7 @@ export function createExportToolbar(options: {
     clearTimeout(reset);
     trigger.innerHTML = downloadIcon;
     delete trigger.dataset.state;
-    outcome.hidden = true;
+    failure = '';
     menu.open = false;
     cancel.hidden = false;
     status.setAttribute('role', 'status');
@@ -123,13 +122,13 @@ export function createExportToolbar(options: {
       if (disposed) return;
       const cancelled = controller.signal.aborted || (error instanceof Error && error.name === 'AbortError')
         || (typeof error === 'object' && error !== null && 'code' in error && error.code === 'EXPORT_ABORTED');
-      status.setAttribute('role', cancelled ? 'status' : 'alert');
-      status.textContent = cancelled ? options.t('exportCancelled') : options.t('exportFailed', { error: error instanceof Error ? error.message : String(error) });
+      status.textContent = options.t(cancelled ? 'exportCancelled' : 'exportError');
       if (!cancelled) {
-        outcome.textContent = options.t('exportError');
-        outcome.title = status.textContent;
-        outcome.dataset.state = 'error';
-        outcome.hidden = false;
+        failure = options.t('exportFailed', { error: error instanceof Error ? error.message : String(error) });
+        trigger.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6m0 3v1"/></svg>';
+        trigger.dataset.state = 'error';
+        // Notification availability must not prevent retrying the export.
+        try { options.onError?.(failure); } catch { /* Retain the accessible icon fallback. */ }
       }
     } finally {
       job = undefined;

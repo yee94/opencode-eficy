@@ -72,3 +72,35 @@ it('rejects failed resource embeds instead of exporting a partial report', async
   vi.mocked(toSvg).mockResolvedValue(encoded('<img src="data:application/x-eficy-missing;base64,"/>'));
   await expect(captureSnapshot(root, vi.fn(), new AbortController().signal)).rejects.toThrow('could not be embedded');
 });
+
+it('shares repeated computed declarations without dropping content or resource values', async () => {
+  const root = setup();
+  const style = 'color: rgb(1, 2, 3); font-family: Report; width: 300px; background-image: url("data:image/png;base64,YQ==");';
+  const content = Array.from({ length: 100 }, (_, i) => `<span style="${style.replaceAll('"', '&quot;')}">row ${i}</span>`).join('');
+  vi.mocked(toSvg).mockResolvedValue(encoded(content));
+  const snapshot = await captureSnapshot(root, vi.fn(), new AbortController().signal);
+  expect(snapshot.html.length).toBeLessThan(content.length / 2);
+  const doc = new DOMParser().parseFromString(snapshot.html, 'text/html');
+  expect(doc.querySelectorAll('span')).toHaveLength(100);
+  expect([...doc.querySelectorAll('span')].at(-1)!.textContent).toBe('row 99');
+  expect(doc.querySelector('style')!.textContent).toContain('data:image/png;base64,YQ==');
+  expect(doc.querySelector('style')!.textContent).toContain('color: rgb(1, 2, 3) !important');
+  expect(new Set([...doc.querySelectorAll('span')].map(node => node.getAttribute('class'))).size).toBe(1);
+});
+
+it('keeps XML-sensitive declarations inline and avoids existing selector names', async () => {
+  const root = setup();
+  const repeated = 'color: rgb(1, 2, 3); font-family: Report; width: 300px; height: 40px; background-color: black;';
+  const sensitive = 'background-image: url("https://example.com/image?a=1&b=2");';
+  const escape = (value: string) => value.replaceAll('&', '&amp;').replaceAll('"', '&quot;');
+  vi.mocked(toSvg).mockResolvedValue(encoded(`<style>.eficy-snapshot-0::before { content: 'original'; }</style>${Array.from({ length: 10 }, () => `<span class="original" style="${escape(repeated)}">kept</span>`).join('')}<i style="${escape(sensitive)}"/><i style="${escape(sensitive)}"/>`));
+  const snapshot = await captureSnapshot(root, vi.fn(), new AbortController().signal);
+  const doc = new DOMParser().parseFromString(snapshot.html, 'text/html');
+  for (const node of doc.querySelectorAll('span')) {
+    expect(node.classList.contains('original')).toBe(true);
+    expect(node.classList.contains('eficy-snapshot-0')).toBe(false);
+    expect(node.hasAttribute('style')).toBe(false);
+  }
+  for (const node of doc.querySelectorAll('i')) expect(node.getAttribute('style')).toBe(sensitive);
+  expect(doc.querySelector('style')!.textContent).toBe(".eficy-snapshot-0::before { content: 'original'; }");
+});

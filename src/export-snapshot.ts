@@ -15,6 +15,45 @@ async function yieldToUI(signal: AbortSignal) {
   signal.throwIfAborted();
 }
 
+function shareComputedStyles(content: HTMLElement) {
+  const groups = new Map<string, Element[]>();
+  for (const node of content.querySelectorAll('[style]')) {
+    const style = node.getAttribute('style')!;
+    // XML escaping inside HTML's raw-text style element would change these values.
+    if (/[&<>]/.test(style)) continue;
+    const nodes = groups.get(style);
+    if (nodes) nodes.push(node);
+    else groups.set(style, [node]);
+  }
+  let prefix = 'eficy-snapshot-';
+  while ([content, ...content.querySelectorAll('[class], [id]')].some(node =>
+    [...node.classList, node.id].some(value => value.startsWith(prefix)))
+    || [...content.querySelectorAll('style')].some(node => node.textContent?.includes(prefix))) prefix += 'x';
+  const rules: string[] = [];
+  const declaration = document.createElement('span').style;
+  for (const [style, nodes] of groups) {
+    if (nodes.length < 2) continue;
+    const name = `${prefix}${rules.length}`;
+    declaration.cssText = style;
+    // Captured computed values remain authoritative over embedded author CSS.
+    for (const property of Array.from(declaration)) {
+      declaration.setProperty(property, declaration.getPropertyValue(property), 'important');
+    }
+    const rule = `:is(#${name},.${name}){${declaration.cssText}}`;
+    if (rule.length + nodes.length * (name.length + 10) >= style.length * nodes.length) continue;
+    rules.push(rule);
+    for (const node of nodes) {
+      node.classList.add(name);
+      node.removeAttribute('style');
+    }
+  }
+  if (rules.length) {
+    const sheet = content.ownerDocument.createElementNS('http://www.w3.org/1999/xhtml', 'style');
+    sheet.textContent = rules.join('\n');
+    content.append(sheet);
+  }
+}
+
 /** Capture the live DOM and embedded resources for the native exporter. */
 export async function captureSnapshot(root: HTMLElement, progress: (value: ExportProgress) => void, signal: AbortSignal): Promise<ViewExportSnapshot> {
   progress({ stage: 'preparing' });
@@ -65,5 +104,6 @@ export async function captureSnapshot(root: HTMLElement, progress: (value: Expor
   }
   content.style.backgroundColor = getComputedStyle(document.body).backgroundColor;
   content.style.colorScheme = getComputedStyle(document.documentElement).colorScheme;
+  shareComputedStyles(content);
   return { html: new XMLSerializer().serializeToString(content), width, height };
 }

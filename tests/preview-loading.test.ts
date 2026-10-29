@@ -1,11 +1,11 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { createRoot, createSignal } from 'solid-js';
-import { Panel, type PanelProps, type Live } from '@opencode/plugin/gui';
+import { Panel, type PanelProps, type Live, type Toasts } from '@opencode/plugin/gui';
 import { ExportPDF, ExportLongImage } from '../src/export-contract';
 import type { ExportPDFAPI, ExportLongImageAPI, ViewExportOptions, ViewExportResult } from '../src/export-types';
 import plugin from '../packages/opencode2-plugin/src/gui';
 
-const { context } = vi.hoisted(() => ({ context: { id: 'eficy', use: vi.fn(), t: (key: string) => key, links: { open: vi.fn() } } }));
+const { context } = vi.hoisted(() => ({ context: { id: 'eficy', use: vi.fn(), toast: undefined as Toasts | undefined, t: (key: string) => key, links: { open: vi.fn() } } }));
 vi.mock('@opencode/plugin/gui', async (original) => ({
   ...await original<typeof import('@opencode/plugin/gui')>(),
   bindPlugin: (component: unknown) => component,
@@ -15,7 +15,7 @@ vi.mock('@opencode/plugin/gui', async (original) => ({
 vi.mock('solid-js', () => vi.importActual<typeof import('solid-js')>('solid-js/dist/solid.js'));
 
 const cleanups: (() => void)[] = [];
-afterEach(() => { cleanups.splice(0).forEach(cleanup => cleanup()); document.body.replaceChildren(); vi.restoreAllMocks(); });
+afterEach(() => { cleanups.splice(0).forEach(cleanup => cleanup()); document.body.replaceChildren(); context.toast = undefined; vi.restoreAllMocks(); });
 
 const limits = { maxHTMLBytes: 16 * 1024 * 1024, maxWidth: 8192, maxHeight: 32768, maxPixels: 16777216 };
 const snapshot = { html: '<div>report</div>', width: 600, height: 1200 };
@@ -183,12 +183,32 @@ it('reports device limits before calling native export and can retry after capab
   app.finishSnapshot();
   await Promise.resolve(); await Promise.resolve();
   expect(save).not.toHaveBeenCalled();
-  expect(app.root.querySelector('.eficy-export-feedback [role=alert]')?.textContent).toBe('exportFailed');
+  expect(app.root.querySelector('.eficy-export-feedback [role=status]')?.textContent).toBe('exportError');
+  expect(app.root.querySelector('summary')?.title).toBe('exportFailed');
   app.setCapability({ status: 'active', generation: 2, value: { version: 1, limits, exportPDF: save } });
   app.root.querySelector<HTMLButtonElement>('.eficy-export-choices button')!.click();
   app.finishSnapshot();
   await Promise.resolve(); await Promise.resolve();
   expect(save).toHaveBeenCalledOnce();
+});
+
+it.each(['supported', 'missing', 'unsupported'] as const)('uses official ctx.toast with safe fallback (%s)', async state => {
+  const app = readyPreview();
+  const show = vi.fn(() => {
+    if (state === 'unsupported') throw Object.assign(new Error('GUI toast is unavailable'), { code: 'GUI_PLUGIN_UNSUPPORTED' });
+    return { dismiss() {} };
+  });
+  if (state !== 'missing') context.toast = { show };
+  const save = vi.fn(async (): Promise<ViewExportResult> => { throw new Error('Disk full'); });
+  app.setCapability({ status: 'active', generation: 1, value: { version: 1, limits, exportPDF: save } });
+  app.root.querySelector<HTMLButtonElement>('.eficy-export-choices button')!.click();
+  app.finishSnapshot();
+  await vi.waitFor(() => expect(app.root.querySelector('summary')?.dataset.state).toBe('error'));
+  if (state !== 'missing') expect(show).toHaveBeenCalledExactlyOnceWith({ title: 'exportFailureTitle', description: 'exportFailed', variant: 'error' });
+  else expect(show).not.toHaveBeenCalled();
+  expect(app.root.querySelector('summary')?.title).toBe('exportFailed');
+  expect(app.root.querySelector('.eficy-export-outcome')).toBeNull();
+  expect(app.root.querySelector<HTMLButtonElement>('.eficy-export-choices button')!.disabled).toBe(false);
 });
 
 it('keeps a real outer SVG visible during a stalled file read and iframe bootstrap', () => {

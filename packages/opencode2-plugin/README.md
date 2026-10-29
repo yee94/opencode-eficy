@@ -4,12 +4,12 @@
 
 ## 安装（OpenCode 2）
 
-`0.4.1` 支持 HTTPS 模块与 CSS 导入，以及按客户端能力提供的 PDF/长图导出。在连接服务的全局 `opencode.json(c)` 中加入 npm 包，保留已有配置：
+`0.4.2` 支持 HTTPS 模块与 CSS 导入，以及按客户端能力提供的 PDF/长图导出。在连接服务的全局 `opencode.json(c)` 中加入 npm 包，保留已有配置：
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugins": ["@eficy/opencode2-plugin@0.4.1"]
+  "plugins": ["@eficy/opencode2-plugin@0.4.2"]
 }
 ```
 

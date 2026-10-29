@@ -1,5 +1,11 @@
 # @eficy/opencode2-plugin
 
+## 0.4.2
+
+### Patch Changes
+
+- Report export failures through the host's official global toast API instead of a local error banner. Older hosts retain an accessible error icon and retry behavior. Deduplicate identical snapshot styles to reduce export payload size while preserving report content and computed styles.
+
 ## 0.4.1
 
 ### Patch Changes

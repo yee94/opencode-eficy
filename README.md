@@ -9,13 +9,13 @@ Eficy 使用一种 `.eficy` 文件格式。通用 OpenCode 2 插件提供服务�
 
 ## 安装
 
-新安装只需通用包 `@eficy/opencode2-plugin@0.4.1`，此版本支持 HTTPS 导入和按客户端能力提供的 PDF/长图导出。将 npm 包加入连接服务的全局 `opencode.jsonc`，保留已有配置：
+新安装只需通用包 `@eficy/opencode2-plugin@0.4.2`，此版本支持 HTTPS 导入和按客户端能力提供的 PDF/长图导出。将 npm 包加入连接服务的全局 `opencode.jsonc`，保留已有配置：
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
   "plugins": [
-    "@eficy/opencode2-plugin@0.4.1"
+    "@eficy/opencode2-plugin@0.4.2"
   ]
 }
 ```
@@ -46,7 +46,9 @@ Eficy 使用一种 `.eficy` 文件格式。通用 OpenCode 2 插件提供服务�
 
 ### 客户端导出
 
-入口为报告预览右上角的 16px 下载图标，采用淡黑半透明底、无明显边框或阴影，不显示文字、不占用布局；本地化名称保留在 aria-label/title，点击才展开 PDF/PNG 菜单。进行中原位显示带取消按钮的圆环，成功原位短暂显示勾号；失败显示精简提示，详细错误保留于 title 和读屏播报，可重新导出。菜单支持 Escape 收起并归还焦点、外点（含 iframe）收起；加载未就绪时禁用。控件触控目标至少 36px，支持宿主明暗色变量与减少动画偏好。
+入口为报告预览右上角的 16px 下载图标，采用淡黑半透明底、无明显边框或阴影，不显示文字、不占用布局；本地化名称保留在 aria-label/title，点击才展开 PDF/PNG 菜单。进行中原位显示带取消按钮的圆环，成功原位短暂显示勾号；失败通过宿主全局 toast 展示本地化错误，原位保留可重试的错误图标、详细 title/aria 和简短读屏状态，不显示局部长文或错误 pill。菜单支持 Escape 收起并归还焦点、外点（含 iframe）收起；加载未就绪时禁用。控件触控目标至少 36px，支持宿主明暗色变量与减少动画偏好。
+
+错误通知使用 SDK 2.2.0 官方 `ctx.toast.show({ title, description, variant: 'error' })`，标题为本地化简短提示，description 为详细错误。旧宿主缺少 `ctx.toast` 或调用抛出 unsupported 等错误时，兼容降级为错误图标及 title/aria，仍可重试，不恢复局部错误块。取消、abort 和销毁后的迟到失败不触发 toast；已提交的原生 saved 结果仍优先于 abort。
 
 两个包统一使用 Yuri 的独立 GSAPI `yuri.exportPDF` / `yuri.exportLongImage`，通过官方 `Contract.define` / `ctx.use` 获取当前设备的 v1 活动能力。各格式独立显示，全部不可用时隐藏工具栏；本地、远端和 Relay 连接使用相同判断。插件不含 main/Electron 导出代码。iframe 生成保留实时交互状态的自包含 HTML 快照，宿主负责原生 PDF/PNG 生成和保存。
 
