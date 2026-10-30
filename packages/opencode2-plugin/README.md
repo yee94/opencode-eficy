@@ -9,7 +9,7 @@
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugins": ["@eficy/opencode2-plugin@0.5.5"]
+  "plugins": ["@eficy/opencode2-plugin@0.5.6"]
 }
 ```
 
@@ -73,15 +73,15 @@ iframe 在外层占位获得绘制机会后才创建；等待期间使用 `visib
 
 ## 内置报告与组件说明
 
-`eficy` 技能用于页面、报告、分析、看板和图表，默认采用 shadcn 组件、暗色主题和报告阅读布局，也支持用户指定风格。包内提供组件说明、报告规范，以及 [经营分析](samples/analytics.eficy)、[履约分析](samples/operations.eficy) 和 [交互工作台](samples/workbench.eficy) 示例。
+`eficy` 技能用于页面、分析报告、看板和图表，简单查找、列举和问答直接回复。默认采用 shadcn 组件、暗色主题和报告阅读布局，也支持用户指定风格。包内提供按需参考的组件说明、报告规范，以及 [经营分析](samples/analytics.eficy)、[履约分析](samples/operations.eficy) 和 [交互工作台](samples/workbench.eficy) 示例。
 
-调用 `eficy_template({ preset: "analytics" | "operations" })` 获取对应报告完整源码，按实际数据与问题修改后保存并交付链接。模板包含明确标注的演示数据；工具只返回源码，不写文件。用户要求验证或出现具体报错时，再按需使用校验工具或浏览器检查。
+调用 `eficy_template({ preset: "analytics" | "operations" })` 获取 JSON 字符串，用 `JSON.parse(result).source` 取得完整 TSX，按实际数据与问题修改后保存并交付链接。模板包含明确标注的演示数据；工具不写文件。默认不校验或截图；用户要求验证或出现具体报错时再检查，通过即停止，失败最多修复并复验一次，仍失败则保留文件并说明阻塞。
 
 页面内的 `<a href>` 本地文件链接通过标准 `ctx.links.open` 交给宿主：支持绝对路径、`file://` URL 和相对当前文件目录的路径，继续在文件标签页中渲染。消息中的文件链接也进入同一文件预览链路。iframe 不自行跳转到本地路径；文件不存在或当前服务无权访问时按宿主文件错误显示。
 
 ## 校验与隔离边界
 
-`eficy_validate({ path, source })` 只处理传入文本，不读取目标路径、不执行代码、不解析网络或磁盘依赖。Sucrase 执行真正的 TSX 语法解析；同一语法 token 流用于检查默认导出和 import 边界。源码限制为 **128 KiB UTF-8**。失败返回 `valid: false`、`code` 和 `error`，区分缺失输入、路径、超限、语法、默认导出、导入与 frame 文档边界问题。
+`eficy_validate({ path, source })` 只处理 `source` 中的完整 TSX，不读取目标路径、不执行代码、不解析网络或磁盘依赖。返回 JSON 字符串，在代码中先解析再读取 `valid`。Sucrase 执行真正的 TSX 语法解析；同一语法 token 流用于检查默认导出和 import 边界。源码限制为 **128 KiB UTF-8**。失败返回 `valid: false`、`code` 和 `error`，区分缺失输入、路径、超限、语法、默认导出、导入与 frame 文档边界问题。
 
 格式要求直接 `export default`；支持固定版本的 HTTPS 浏览器模块与 CSS 侧效导入。相对本地模块、未映射的 npm 包名、动态 import、`require`、`loadModule` 不支持。外部 React 库需保留 React external，使用 frame 的共享实例；初始化、import map 和挂载由 frame 管理。静态校验通过不证明 CDN 可达或模块包含所需导出。
 

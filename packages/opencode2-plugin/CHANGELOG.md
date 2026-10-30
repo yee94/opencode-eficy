@@ -1,5 +1,11 @@
 # @eficy/opencode2-plugin
 
+## 0.5.6
+
+### Patch Changes
+
+- 精简 Eficy skill，简单查找和列举直接回复，页面保存即交付；按需校验通过即停，失败仅一次针对性修复。明确模板 JSON 的 source 字段和校验输入输出，避免重复探测与无效重写。
+
 ## 0.5.5
 
 ### Patch Changes

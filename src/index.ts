@@ -41,10 +41,13 @@ return Plugin.define({
     }));
     await ctx.tool.transform((editor) => editor.add({
       name: options.validateTool,
-      description: '按需诊断 .eficy TSX 源码的语法与静态导入边界，适用于用户要求校验或排查报错；不执行源码、不访问网络或文件。',
+      description: '仅在用户要求校验或排查报错时诊断完整 .eficy TSX。返回 JSON 字符串，valid: true 表示本次静态校验结束；失败按 code/error 修复。不执行源码、不访问网络或文件。',
       input: {
         type: 'object',
-        properties: { path: { type: 'string' }, source: { type: 'string' } },
+        properties: {
+          path: { type: 'string', description: '目标 .eficy 文件路径，仅标识文件，不读取其内容。' },
+          source: { type: 'string', description: '与交付文件一致的完整 TSX 源码；不是路径、JSON 包装或代码片段。' },
+        },
         required: ['path', 'source'],
         additionalProperties: false,
       },
@@ -65,7 +68,7 @@ return Plugin.define({
       const templates = options.templates;
       await ctx.tool.transform((editor) => editor.add({
         name: options.templateTool!,
-        description: '返回完整暗色 shadcn 数据分析报告模板，包含本地演示数据、结论和 400–600px 阅读布局。修改数据与源码后保存为一个 .eficy 文件并交付链接；本工具只返回源码，不写入文件。',
+        description: '返回暗色 shadcn 报告模板的 JSON 字符串，包含 path、source、demoData。先 JSON.parse，取 source 字段作为 TSX，替换演示数据后保存并交付链接；不写文件，无需默认追加校验。',
         input: { type: 'object', properties: { preset: { type: 'string', enum: Object.keys(templates) } }, required: ['preset'], additionalProperties: false },
         execute: async (input) => {
           if (!input || typeof input !== 'object' || !('preset' in input) || typeof input.preset !== 'string' || !Object.hasOwn(templates, input.preset)) {

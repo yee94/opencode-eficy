@@ -1,14 +1,6 @@
 # Eficy + shadcn 单文件交互预览
 
-## 何时使用
-
-用户提出做报告、做分析、数据分析、看板/dashboard、图表解读这类需求时，优先用本 skill 产出可交互的 `.eficy` 文件，而不是在对话里写 Markdown 报告或静态 HTML。只有用户明确要求纯文本、或环境无法渲染预览时，才退回普通文本输出。
-
-## 一次交付流程
-
-1. 根据用户目标选择页面结构与交互：表单、计算工具、展示页、dashboard 等都可直接用 Eficy + shadcn 实现。用户要求数据分析、图表解读或报告时，先读 [报告规范](reports.md)，再生成可打开的报告文件。
-2. 将组件、数据和状态写入一个 `.eficy` TSX 文件，遵循下面的渲染契约。报告可选用 `eficy_template` 获取完整起点；其他页面直接编写，不必套用报告模板。
-3. 按主 skill 的交付步骤保存文件并返回预览链接。
+复杂组件与交互的按需参考；交付与校验流程以主 skill 为准。
 
 ## 文件与运行时
 
@@ -52,6 +44,7 @@ const { Card, CardHeader, CardTitle, CardDescription, CardContent,
 - 用 `computed()` 派生筛选结果、计算值和展示数据；事件修改源 Signal，组件自动重新渲染。文件更新时模块会重新求值，状态不持久化。
 - `Input` 使用 `value={search.value}`、`onChange={e => { search.value = e.target.value; }}`；`Select` 使用 `value={range.value}`、`onValueChange={value => { range.value = value; }}`；`Tabs` 同样使用 `onValueChange`，不要把 DOM `onChange` 套给它们。
 - 多字段重置用 `batch`。数组/对象更新使用新引用，`effect` 不读写同一个 Signal 形成循环。
+- 文本和基本类型 props 可直接传 Signal；对象 Signal 读取具体字段。简单输入可用 `bind`；数字输入保留字符串中间态，再用 `computed` 转换。不需订阅的读取用 `peek`。
 - 每个可操作控件都有可见结果；表单展示校验或提交结果，工具更新计算值，筛选更新展示数据。
 
 ### 最小交互示例
@@ -80,7 +73,7 @@ const Preview = component(() => <main className="p-4">
 
 布局根据页面用途与宿主容器自适应，图表明确高度，宽表格内部横滚。400–600px 的阅读宽度是报告场景的默认建议，不是硬约束：用户指定更宽或更窄时照做，插件只提供引导，不强制限宽。通用页面按任务选择合适宽度。
 
-相对或绝对本地文件链接使用 `<a href>`，宿主负责打开文件标签页；页面内部导航优先 Signal 状态或 `#section`，不导航 iframe。
+本地文件链接使用 `<a href="/workspace/页面 文件.eficy">打开页面</a>`，也支持正确编码的 `file://` URL；相对路径基于当前文件目录。目标须是当前服务可访问的真实文件，宿主负责打开文件标签页。`#section` 保留页内锚点，不用 `window.location` 或 `window.open` 导航 iframe；文件链接不等于跨文件 JS import。
 
 ## 包内运行时版本
 

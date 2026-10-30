@@ -8,13 +8,13 @@ Eficy 为 OpenCode 2 提供 `.eficy` 单文件交互预览，内置页面与报�
 
 ## 安装
 
-将 `@eficy/opencode2-plugin@0.5.5` 加入连接服务的全局 `opencode.jsonc`，保留已有配置：
+将 `@eficy/opencode2-plugin@0.5.6` 加入连接服务的全局 `opencode.jsonc`，保留已有配置：
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
   "plugins": [
-    "@eficy/opencode2-plugin@0.5.5"
+    "@eficy/opencode2-plugin@0.5.6"
   ]
 }
 ```
@@ -25,7 +25,7 @@ Eficy 为 OpenCode 2 提供 `.eficy` 单文件交互预览，内置页面与报�
 
 > 使用 eficy 技能，生成一份 SaaS 收入分析报告：先给结论，再展示关键指标、趋势和渠道构成，注明统计口径；暗色、最大宽度 600px 居中，支持日期筛选，使用演示数据。保存 report.eficy 并返回预览链接。
 
-`eficy` 技能在页面、报告、分析、看板和图表任务中默认交付 Eficy 文件。基础包包含 shadcn/图表的 HTTPS 导入说明、组件交互说明和完整报告规范；`eficy_template` 提供 `analytics` 经营分析与 `operations` 履约分析模板，修改后直接保存并交付链接，校验与浏览器检查按需使用。源码、数据、状态留在一个文件中，本地编译；React/Eficy 内置，外部组件和 CSS 按固定版本 URL 在客户端加载。
+`eficy` 技能在页面、分析报告、看板和图表任务中默认交付 Eficy 文件，简单查找、列举和问答直接回复。基础包包含按需读取的 shadcn/图表导入、组件交互和报告规范；`eficy_template` 提供 `analytics` 经营分析与 `operations` 履约分析模板，修改后直接保存并交付链接，校验与浏览器检查按需使用。源码、数据、状态留在一个文件中，本地编译；React/Eficy 内置，外部组件和 CSS 按固定版本 URL 在客户端加载。
 
 ## 开发结构
 

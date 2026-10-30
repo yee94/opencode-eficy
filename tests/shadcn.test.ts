@@ -26,10 +26,12 @@ it('includes the shadcn report templates and validator in the base package', asy
   const validate = async (input: unknown) => JSON.parse((await tools[0].execute(input)).content);
   const template = async (input: unknown) => JSON.parse((await tools[1].execute(input)).content);
   for (const preset of ['analytics', 'operations']) {
-    const result = await template({ preset });
+    const response = (await tools[1].execute({ preset })).content;
+    const result = JSON.parse(response);
     expect(result.path).toBe(`${preset}.eficy`);
     expect(result.demoData).toBe(true);
     expect(result.source).toBe(readFileSync(join(root, 'samples', `${preset}.eficy`), 'utf8'));
+    expect(await validate({ path: result.path, source: response })).toMatchObject({ valid: false, code: 'syntax' });
     expect(await validate({ path: result.path, source: result.source })).toMatchObject({ valid: true, imports: expect.arrayContaining(['eficy', 'https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.1.3/dist/index.js', 'https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.1.3/dist/index.css']) });
     expect(result.source).toContain('ChartContainer');
     expect(result.source).toContain('https://cdn.jsdelivr.net/npm/@eficy/charts@0.1.0/dist/index.js');

@@ -2,7 +2,7 @@ import { createEficyPlugin } from '../../../src/index';
 
 export default createEficyPlugin({
   id: 'eficy', moduleURL: import.meta.url,
-  skill: { name: 'eficy', description: '创建或修复 Eficy + shadcn 单文件交互页面与报告。用户需要出页面、出报告、做分析、制作看板或图表时默认使用：采用 shadcn 组件、暗色语义主题和内置报告规范，交付 .eficy 文件及预览链接。包含经营分析与履约分析完整模板；用户明确指定其他风格或格式时遵循其要求。' },
+  skill: { name: 'eficy', description: '创建或修复 .eficy 交互页面、分析报告、看板和图表，默认 shadcn 暗色主题，保存后交付预览链接。简单查找、列举、问答直接回复；用户指定格式时遵循要求。' },
   validateTool: 'eficy_validate', extension: '.eficy',
   templateTool: 'eficy_template',
   templates: { analytics: 'analytics.eficy', operations: 'operations.eficy' },
