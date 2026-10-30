@@ -1,8 +1,9 @@
 import type * as ReactTypes from 'react';
 import type { Root } from 'react-dom/client';
-import { parseEficy } from './parser';
+import { EficyValidationError, parseEficy } from './parser';
 import { isLocalFileLink } from './file-links';
 import type { ExportProgress } from './export-types';
+import { defaultErrorText } from './loading';
 
 interface EficyRuntime {
   initEficy(options: { components: Record<string, unknown> }): Promise<unknown>;
@@ -14,6 +15,7 @@ interface EficyRuntime {
 const payload = JSON.parse(document.getElementById('eficy-payload')!.textContent!) as {
   frameId: string; nonce: string; theme?: 'light' | 'dark'; eficy: string; shadcn: string; shadcnCSS: string;
   loadingText: { initial: string; compiling: string; dependencies: string; rendering: string; detail: string };
+  errorText?: typeof defaultErrorText;
   snapshot: string;
   source?: string;
 };
@@ -24,20 +26,24 @@ document.documentElement.style.colorScheme = payload.theme === 'dark' ? 'dark' :
 const React = (window as unknown as { React: typeof ReactTypes }).React;
 const ReactDOM = (window as unknown as { ReactDOM: { createRoot(element: HTMLElement): Root; flushSync(callback: () => void): void } }).ReactDOM;
 const errorElement = document.getElementById('eficy-error')!;
+const errorSurface = document.getElementById('eficy-error-state')!;
 const rootElement = document.getElementById('eficy-root')!;
 const loadingElement = document.getElementById('eficy-loading')!;
 const loadingTitle = document.getElementById('eficy-loading-title')!;
 const loadingDetail = document.getElementById('eficy-loading-detail')!;
-const retry = document.createElement('button');
-retry.textContent = 'Retry / 重试';
-retry.hidden = true;
-errorElement.after(retry);
+const retry = document.getElementById('eficy-retry') as HTMLButtonElement;
+const errorText = payload.errorText ?? defaultErrorText;
+const hideError = () => {
+  errorSurface.hidden = true;
+  errorElement.hidden = true;
+  errorElement.textContent = '';
+  retry.hidden = true;
+};
 retry.onclick = () => {
   if (standalone) { window.location.reload(); return; }
   hasContent = false;
   rootElement.hidden = true;
-  errorElement.hidden = true;
-  retry.hidden = true;
+  hideError();
   showLoading(payload.loadingText.initial);
   notify('retry');
 };
@@ -70,7 +76,9 @@ const showLoading = (title: string) => {
 const showError = (error: unknown) => {
   loadingElement.hidden = true;
   rootElement.setAttribute('aria-busy', 'false');
-  errorElement.textContent = error instanceof Error ? error.message : String(error);
+  errorElement.textContent = error instanceof EficyValidationError && error.code === 'frame-boundary'
+    ? errorText.frameBoundary : error instanceof Error ? error.message : String(error);
+  errorSurface.hidden = false;
   errorElement.hidden = false;
   retry.hidden = false;
   notify('status', { revision, status: 'error', error: errorElement.textContent, hasContent });
@@ -200,9 +208,7 @@ async function update(source: string, current: number) {
         hasContent = true;
         rootElement.setAttribute('aria-busy', 'false');
         loadingElement.hidden = true;
-        errorElement.hidden = true;
-        errorElement.textContent = '';
-        retry.hidden = true;
+        hideError();
         notify('status', { revision: current, status: 'committed' });
       };
       React.startTransition(() => root!.render(
@@ -258,9 +264,7 @@ function receive(event: MessageEvent) {
   for (const link of pendingSheets) link.remove();
   pendingSheets.clear();
   previousSource = data.source;
-  errorElement.hidden = true;
-  errorElement.textContent = '';
-  retry.hidden = true;
+  hideError();
   showLoading(payload.loadingText.compiling);
   void update(data.source, revision);
 }

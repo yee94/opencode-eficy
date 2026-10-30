@@ -9,7 +9,7 @@
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugins": ["@eficy/opencode2-plugin@0.5.4"]
+  "plugins": ["@eficy/opencode2-plugin@0.5.5"]
 }
 ```
 
@@ -88,6 +88,8 @@ iframe 在外层占位获得绘制机会后才创建；等待期间使用 `visib
 静态校验不是类型检查或安全沙箱，也不能证明默认导出值可渲染。源码在客户端编译并在隔离 iframe 运行，不发送到 CDN；网络用于获取外部资源。iframe 权限、CSP、消息来源校验和资源清理由 frame 承担，不授予父页 DOM、宿主 SDK 或 Node API 能力。首次加载需要网络及资源端 CORS 支持，浏览器缓存不等于完整离线保证。
 
 iframe 采用 `allow-scripts allow-forms`，不授予 same-origin 权限。`allow-forms` 让 React 的 `onSubmit` 可以收到原生表单事件，CSP 的 `form-action 'none'` 仍禁止网络表单提交。消息通过 source 与独立 frameId 校验；opaque origin 的首次握手只能使用通配目标，不传递宿主凭据。
+
+文件读取错误由插件外层展示；格式校验、依赖和 React 渲染错误由插件 iframe 内的兜底页展示，不依赖宿主替换。两层与加载态共用插图布局：80px 高的 SVG 中心固定在预览中点上方 64px，标题和原因从中点上方 4px 起向下独立滚动，长错误不会挤动插图。错误页使用本地化标题、纯文本原因与中性实心重试按钮；`frame-boundary` 会说明应移除文档/脚本标签并保留 TSX 默认组件导出，其他错误保留实际原因。修正源码并收到新版本后自动恢复；重试重启当前 iframe，不改变文件格式校验和隔离边界。导出的交互 HTML 复用同一布局。
 
 ## 导出报告
 

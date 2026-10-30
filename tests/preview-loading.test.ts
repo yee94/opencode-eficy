@@ -356,12 +356,18 @@ it('exposes file errors with retry and ignores an abandoned read failure during 
   const loading = root.querySelector<HTMLElement>('.eficy-file-loading')!;
   const status = root.querySelector<HTMLElement>('.eficy-file-status')!;
   const retry = root.querySelector<HTMLButtonElement>('.eficy-file-retry')!;
+  const error = root.querySelector<HTMLElement>('.eficy-file-error')!;
+  expect(error.hidden).toBe(false);
+  expect(error.getAttribute('role')).toBe('alert');
+  expect(error.querySelector('.eficy-state-illustration svg')).not.toBeNull();
+  expect(error.querySelector('.eficy-state-copy')!.contains(status)).toBe(true);
   expect(loading.hidden).toBe(true);
   expect(status.hidden).toBe(false);
   expect(status.textContent).toBe('File unavailable');
   expect(retry.hidden).toBe(false);
   retry.click();
   expect(sync).toHaveBeenCalledTimes(2);
+  expect(error.hidden).toBe(true);
   expect(loading.hidden).toBe(false);
   expect(status.hidden).toBe(true);
   oldReject(new Error('Abandoned read'));

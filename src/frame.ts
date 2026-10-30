@@ -1,11 +1,12 @@
 import { isLocalFileLink } from './file-links';
 import type { ExportProgress, ViewExportSnapshot } from './export-types';
 import { defaultLoadingText, previewDocument } from './frame-document';
+import type { defaultErrorText } from './loading';
 
 export type PreviewStatus = { status: 'loading'; title: string; restart?: boolean } | { status: 'committed' } | { status: 'error'; error: string; hasContent: boolean };
 
 /** Each preview owns its opaque-origin document and React runtime. */
-export function createPreviewFrame(options: { version?: string; theme?: 'light' | 'dark'; loadingText?: { initial: string; compiling: string; dependencies: string; rendering: string; detail: string }; onStatus?: (status: PreviewStatus) => void; openLink?: (href: string, background: boolean) => boolean | Promise<boolean>; onReadyChange?: (ready: boolean) => void } = {}): {
+export function createPreviewFrame(options: { version?: string; theme?: 'light' | 'dark'; loadingText?: { initial: string; compiling: string; dependencies: string; rendering: string; detail: string }; errorText?: typeof defaultErrorText; onStatus?: (status: PreviewStatus) => void; openLink?: (href: string, background: boolean) => boolean | Promise<boolean>; onReadyChange?: (ready: boolean) => void } = {}): {
   element: HTMLIFrameElement;
   update(source: string): void;
   snapshot(progress: (value: ExportProgress) => void, signal?: AbortSignal): Promise<ViewExportSnapshot>;
@@ -110,13 +111,13 @@ export function createPreviewFrame(options: { version?: string; theme?: 'light' 
   element.setAttribute('title', 'Eficy preview');
   element.style.cssText = 'width:100%;height:100%;border:0;display:block';
   const loadingText = options.loadingText ?? defaultLoadingText;
-  const documentSource = () => previewDocument({ frameId, theme: options.theme, loadingText });
+  const documentSource = () => previewDocument({ frameId, theme: options.theme, loadingText, errorText: options.errorText });
   element.srcdoc = documentSource();
   return {
     element,
     exportHTML(title) {
       if (disposed || !rendered || source === undefined) throw new Error('Wait for the preview to finish rendering before exporting.');
-      return previewDocument({ source, title, theme: options.theme, loadingText });
+      return previewDocument({ source, title, theme: options.theme, loadingText, errorText: options.errorText });
     },
     update(nextSource) {
       if (disposed || nextSource === source) return;

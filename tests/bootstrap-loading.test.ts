@@ -1,6 +1,7 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import React from 'react';
 import assets from '../src/generated/runtime';
+import { previewDocument } from '../src/frame-document';
 
 afterEach(() => {
   window.dispatchEvent(new Event('pagehide'));
@@ -11,7 +12,7 @@ afterEach(() => {
 });
 
 it('reports bootstrap failure before ready/revision delivery and exposes a working retry instead of loading', async () => {
-  document.body.innerHTML = '<section id="eficy-loading"><p id="eficy-loading-title"></p><p id="eficy-loading-detail"></p></section><pre id="eficy-error" hidden></pre><div id="eficy-root" hidden></div><script id="eficy-payload" type="application/json"></script>';
+  document.body.innerHTML = new DOMParser().parseFromString(previewDocument({ frameId: 'bootstrap-error' }), 'text/html').body.innerHTML;
   document.getElementById('eficy-payload')!.textContent = JSON.stringify({
     frameId: 'bootstrap-error', nonce: 'test', eficy: 'throw new Error("bootstrap failed");', shadcn: '',
     loadingText: { initial: 'Preparing', detail: 'Please wait' },

@@ -8,7 +8,7 @@ import exportStyles from './export-toolbar.css?inline';
 import { ExportPDF, ExportLongImage } from './export-contract';
 import { PreviewActions, type PreviewActionSurface } from './preview-actions';
 import type { ExportFormat } from './export-types';
-import { loadingStyles, loadingSVG } from './loading';
+import { defaultErrorText, errorSVG, loadingStyles, loadingSVG, previewStateStyles } from './loading';
 
 const FileIcon = Registry.define<{ id: string; extensions: readonly string[]; svg: string; lightSvg?: string }>('yuri.file-icon');
 
@@ -27,25 +27,33 @@ function Preview(props: PanelProps & { version: string; theme: 'light' | 'dark' 
   loading.setAttribute('role', 'status');
   loading.setAttribute('aria-live', 'polite');
   loading.setAttribute('aria-atomic', 'true');
-  loading.innerHTML = loadingSVG;
+  loading.innerHTML = `<div class="eficy-state-illustration">${loadingSVG}</div><div class="eficy-state-copy"><div class="eficy-state-content"></div></div>`;
   const title = document.createElement('p');
   title.className = 'eficy-loading-title';
   title.textContent = ctx.t('loading');
   const detail = document.createElement('p');
   detail.className = 'eficy-loading-detail';
   detail.textContent = ctx.t('loadingDetail');
-  loading.append(title, detail);
+  loading.querySelector('.eficy-state-content')!.append(title, detail);
+  const errorSurface = document.createElement('section');
+  errorSurface.className = 'eficy-file-error';
+  errorSurface.setAttribute('role', 'alert');
+  errorSurface.hidden = true;
+  errorSurface.innerHTML = `<div class="eficy-state-illustration">${errorSVG}</div><div class="eficy-state-copy"><div class="eficy-state-content"></div></div>`;
+  const errorTitle = document.createElement('p');
+  errorTitle.className = 'eficy-loading-title';
+  errorTitle.textContent = ctx.t('previewError');
   const status = document.createElement('p');
-  status.className = 'eficy-file-status';
-  status.setAttribute('role', 'alert');
+  status.className = 'eficy-file-status eficy-loading-detail';
   status.hidden = true;
   const retry = document.createElement('button');
   retry.className = 'eficy-file-retry';
   retry.type = 'button';
   retry.hidden = true;
+  errorSurface.querySelector('.eficy-state-content')!.append(errorTitle, status, retry);
   const surface = document.createElement('div');
   surface.className = 'eficy-file-surface';
-  root.append(loading, status, retry, surface);
+  root.append(loading, errorSurface, surface);
   const [attempt, setAttempt] = createSignal(0);
   retry.onclick = () => setAttempt(value => value + 1);
   onCleanup(() => { retry.onclick = null; });
@@ -79,6 +87,7 @@ function Preview(props: PanelProps & { version: string; theme: 'light' | 'dark' 
       root.setAttribute('aria-busy', String(busy && !fileError));
       if (frame) frame.element.style.visibility = hasContent || runtimeError ? 'visible' : 'hidden';
       status.textContent = fileError;
+      errorSurface.hidden = !fileError;
       status.hidden = !fileError;
       retry.hidden = !fileError;
     };
@@ -100,6 +109,7 @@ function Preview(props: PanelProps & { version: string; theme: 'light' | 'dark' 
             initial: ctx.t('preparing'), compiling: ctx.t('compiling'), dependencies: ctx.t('dependencies'),
             rendering: ctx.t('rendering'), detail: ctx.t('loadingDetail'),
           },
+          errorText: { title: ctx.t('previewError'), retry: ctx.t('retry'), frameBoundary: ctx.t('frameBoundary') },
           onReadyChange: setRenderReady,
           onStatus: value => {
             if (!active) return;
@@ -139,6 +149,7 @@ function Preview(props: PanelProps & { version: string; theme: 'light' | 'dark' 
       const current = mounted();
       if (current) current.element.title = ctx.t('preview');
       retry.textContent = ctx.t('retry');
+      errorTitle.textContent = ctx.t('previewError');
     });
     createEffect(() => {
       const current = mounted();
@@ -240,15 +251,15 @@ function Preview(props: PanelProps & { version: string; theme: 'light' | 'dark' 
 export function createGuiPlugin(options: { version: string; extension: string; priority: number; label: string; theme?: 'light' | 'dark' }) {
 return Plugin.define({
   i18n: {
-    en: { ...exportMessages.en, retry: 'Retry', preview: `${options.label} preview`, loading: 'Loading Eficy file…', missing: 'Eficy file not found', preparing: 'Preparing preview', compiling: 'Preparing page', dependencies: 'Loading components and styles', rendering: 'Rendering preview', loadingDetail: 'The first load may take a moment. Your preview will appear when ready.' },
-    zh: { ...exportMessages.zh, retry: '重试', preview: `${options.label} 预览`, loading: '正在加载 Eficy 文件…', missing: '找不到 Eficy 文件', preparing: '正在准备预览', compiling: '正在准备页面', dependencies: '正在加载组件与样式', rendering: '正在呈现预览', loadingDetail: '首次加载可能需要一些时间，准备完成后会自动显示。' },
+    en: { ...exportMessages.en, retry: 'Retry', previewError: 'Preview unavailable', frameBoundary: 'This file contains HTML document tags or scripts. Eficy expects a TSX component: remove <html>, <head>, <body> and <script>, and keep export default.', preview: `${options.label} preview`, loading: 'Loading Eficy file…', missing: 'Eficy file not found', preparing: 'Preparing preview', compiling: 'Preparing page', dependencies: 'Loading components and styles', rendering: 'Rendering preview', loadingDetail: 'The first load may take a moment. Your preview will appear when ready.' },
+    zh: { ...exportMessages.zh, retry: defaultErrorText.retry, previewError: defaultErrorText.title, frameBoundary: defaultErrorText.frameBoundary, preview: `${options.label} 预览`, loading: '正在加载 Eficy 文件…', missing: '找不到 Eficy 文件', preparing: '正在准备预览', compiling: '正在准备页面', dependencies: '正在加载组件与样式', rendering: '正在呈现预览', loadingDetail: '首次加载可能需要一些时间，准备完成后会自动显示。' },
   },
   setup(ctx) {
     ctx.add(FileIcon, { id: ctx.id, extensions: [options.extension.split('.').at(-1)!], svg: fileIcon });
     ctx.add(Style, exportStyles);
     const View = bindPlugin((props: PanelProps) => createComponent(Preview, mergeProps(props, { version: options.version, theme: options.theme ?? 'dark' })));
     const tabs = new Map<string, PanelTab>();
-    ctx.add(Style, `${loadingStyles('.eficy-file-loading')}.eficy-file-loading{position:absolute;min-height:100%}.eficy-file-preview{position:relative;height:100%;min-height:0;display:flex;flex-direction:column;color:inherit}.eficy-file-status{padding:8px 16px;white-space:pre-wrap;overflow-wrap:anywhere}.eficy-file-status[role=alert]{color:var(--status-error,currentColor)}.eficy-file-surface{flex:1;min-height:0;display:flex}.eficy-file-surface>iframe{width:100%;height:100%;min-height:240px;border:0;flex:1}`);
+    ctx.add(Style, `${loadingStyles('.eficy-file-loading')}${previewStateStyles('.eficy-file-error')}.eficy-file-loading,.eficy-file-error{position:absolute;min-height:100%}.eficy-file-error{z-index:1}.eficy-file-preview{position:relative;height:100%;min-height:0;display:flex;flex-direction:column;color:inherit}.eficy-file-surface{flex:1;min-height:0;display:flex}.eficy-file-surface>iframe{width:100%;height:100%;min-height:240px;border:0;flex:1}`);
     ctx.add(LinkHandler, {
       priority: options.priority,
       match: (link) => isPreviewFileLink(link.href, options.extension),

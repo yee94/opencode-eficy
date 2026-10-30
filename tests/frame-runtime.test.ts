@@ -3,6 +3,7 @@ import React from 'react';
 import * as ReactDOM from 'react-dom';
 import { createRoot, hydrateRoot } from 'react-dom/client';
 import assets from '../src/generated/runtime';
+import { previewDocument } from '../src/frame-document';
 
 let revision = 0;
 let blobSequence = 0;
@@ -24,7 +25,7 @@ const gate = (name: string) => {
 };
 
 beforeAll(async () => {
-  document.body.innerHTML = '<section id="eficy-loading"><p id="eficy-loading-title"></p><p id="eficy-loading-detail"></p></section><pre id="eficy-error" hidden></pre><div id="eficy-root" aria-busy="true" hidden></div><script id="eficy-payload" type="application/json"></script>';
+  document.body.innerHTML = new DOMParser().parseFromString(previewDocument({ frameId }), 'text/html').body.innerHTML;
   document.getElementById('eficy-payload')!.textContent = JSON.stringify({ frameId, nonce: 'test', theme: 'dark', eficy: assets.eficy, shadcn: assets.shadcn, shadcnCSS: assets.shadcnCSS, loadingText: { initial: '正在准备预览', compiling: '正在准备页面', dependencies: '正在加载组件与样式', rendering: '正在呈现预览', detail: '准备完成后会自动显示。' } });
   Object.assign(window, { React, ReactDOM: { ...ReactDOM, createRoot, hydrateRoot } });
   class SourceBlob extends NativeBlob {
@@ -142,6 +143,23 @@ describe('iframe execution boundary', () => {
     expect(notices).toContainEqual(expect.objectContaining({ type: 'status', revision, status: 'error', hasContent: true }));
     expect(content()).toBe('previous content');
     expect(Reflect.get(window, 'executed')).toBeUndefined();
+  });
+
+  it('shows document-boundary failures in the illustrated error surface and recovers through repeated edits', async () => {
+    const surface = document.getElementById('eficy-error-state')!;
+    for (let index = 0; index < 5; index++) {
+      send('export default () => <html><body>Not a TSX page</body></html>;');
+      await vi.waitFor(() => expect(error().hidden).toBe(false));
+      expect(surface.hidden).toBe(false);
+      expect(surface.querySelector('.eficy-state-illustration svg')).not.toBeNull();
+      expect(error().textContent).toContain('TSX');
+      expect(error().textContent).toContain('export default');
+      expect(loading().hidden).toBe(true);
+      send(`export default () => "recovered-${index}";`);
+      await vi.waitFor(() => expect(content()).toBe(`recovered-${index}`));
+      expect(surface.hidden).toBe(true);
+      expect(error().textContent).toBe('');
+    }
   });
 
   it('ignores an older async module completing after a newer revision', async () => {

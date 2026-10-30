@@ -1,6 +1,6 @@
 {
   "name": "@eficy/opencode2-plugin",
-  "version": "0.5.4",
+  "version": "0.5.5",
   "description": "Self-contained Eficy TSX previews, skill and validator for OpenCode 2",
   "type": "module",
   "license": "MIT",
