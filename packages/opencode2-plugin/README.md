@@ -2,6 +2,8 @@
 
 提供 `eficy` 技能、报告模板、`eficy_validate` 校验工具与 `.eficy` GUI 预览。服务端插件 ID 为 `eficy`，SDK 使用 `@opencode/plugin` 2.2.0。iframe 内置 Eficy/React；组件、图标、图表及 CSS 通过固定版本 HTTPS 地址按需加载。
 
+插件图标为透明底的文档 E，使用 `currentColor` 单色 SVG。源文件为 [`icon.svg`](icon.svg)，`package.json` 顶层 `icon` 内嵌同一图形的 data URI，不依赖远程图片；`.eficy` 文件类型图标保持原有配色。
+
 ## 安装（OpenCode 2）
 
 默认提供完整 Eficy + shadcn 页面与报告引导，支持 HTTPS 模块与 CSS 导入、HTML 单文件导出，以及按客户端能力提供的 PDF/长图导出。在连接服务的全局 `opencode.json(c)` 中加入 npm 包，保留已有配置：
@@ -9,7 +11,7 @@
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugins": ["@eficy/opencode2-plugin@0.5.6"]
+  "plugins": ["@eficy/opencode2-plugin@0.5.7"]
 }
 ```
 

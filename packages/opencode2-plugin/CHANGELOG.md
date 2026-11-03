@@ -1,5 +1,11 @@
 # @eficy/opencode2-plugin
 
+## 0.5.7
+
+### Patch Changes
+
+- 为插件包添加透明底、currentColor 单色 SVG 图标，以顶层 package.json.icon 内嵌 data URI 提供，并随 npm 包分发 SVG 源文件；原有 .eficy 文件类型图标保持不变。
+
 ## 0.5.6
 
 ### Patch Changes

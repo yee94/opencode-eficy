@@ -1,7 +1,8 @@
 {
   "name": "@eficy/opencode2-plugin",
-  "version": "0.5.6",
+  "version": "0.5.7",
   "description": "Self-contained Eficy TSX previews, skill and validator for OpenCode 2",
+  "icon": "data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='currentColor'%20stroke-width='1.8'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M14%203H6a2%202%200%200%200-2%202v14a2%202%200%200%200%202%202h12a2%202%200%200%200%202-2V9Z'/%3E%3Cpath%20d='M14%203v6h6M14%2012H9v6h5M9%2015h4'/%3E%3C/svg%3E",
   "type": "module",
   "license": "MIT",
   "repository": {
@@ -19,6 +20,7 @@
     "./gui-experimental": "./dist/gui-experimental.cjs"
   },
   "files": [
+    "icon.svg",
     "dist",
     "skills",
     "samples",

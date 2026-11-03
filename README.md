@@ -8,13 +8,13 @@ Eficy 为 OpenCode 2 提供 `.eficy` 单文件交互预览，内置页面与报�
 
 ## 安装
 
-将 `@eficy/opencode2-plugin@0.5.6` 加入连接服务的全局 `opencode.jsonc`，保留已有配置：
+将 `@eficy/opencode2-plugin@0.5.7` 加入连接服务的全局 `opencode.jsonc`，保留已有配置：
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
   "plugins": [
-    "@eficy/opencode2-plugin@0.5.6"
+    "@eficy/opencode2-plugin@0.5.7"
   ]
 }
 ```
