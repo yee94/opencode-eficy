@@ -6,3 +6,6 @@ coverage/
 .turbo/
 artifacts/
 dist/
+packages/dsh-plugin/skills/
+packages/dsh-plugin/samples/
+packages/dsh-plugin/LICENSE

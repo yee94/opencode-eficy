@@ -1,20 +1,21 @@
-# OpenCode 2 的 Eficy 插件
+# Eficy 宿主插件
 
-Eficy 为 OpenCode 2 提供 `.eficy` 单文件交互预览，内置页面与报告技能、校验工具和分析模板。组件、图标、图表及 CSS 通过 HTTPS 按需加载。
+Eficy 为 OpenCode 2 和 DeepSeek Harness 提供 `.eficy` 单文件交互预览，内置页面与报告技能、校验工具和分析模板。组件、图标、图表及 CSS 通过 HTTPS 按需加载。
 
 | npm 包 | 文件后缀 | 用途 |
 | --- | --- | --- |
 | [`@eficy/opencode2-plugin`](packages/opencode2-plugin/README.md) | `.eficy` | 通用交互式 TSX 预览 |
+| [`@eficy/dsh-plugin`](packages/dsh-plugin/README.md) | `.eficy` | DeepSeek Harness 交互式预览与报告导出 |
 
 ## 安装
 
-将 `@eficy/opencode2-plugin@0.5.8` 加入连接服务的全局 `opencode.jsonc`，保留已有配置：
+将 `@eficy/opencode2-plugin@0.5.9` 加入连接服务的全局 `opencode.jsonc`，保留已有配置：
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
   "plugins": [
-    "@eficy/opencode2-plugin@0.5.8"
+    "@eficy/opencode2-plugin@0.5.9"
   ]
 }
 ```
@@ -47,6 +48,7 @@ PDF/PNG 使用 Yuri 的独立 GSAPI `yuri.exportPDF` / `yuri.exportLongImage`，
 
 ```text
 packages/opencode2-plugin/  通用包入口、技能、样例和发布元数据
+packages/dsh-plugin/        DeepSeek Harness 服务端与文档预览适配
 src/                       共享服务端注册、解析、GUI 和隔离 iframe 实现
 scripts/                   共享运行时构建、单包构建和打包发布
 tests/                     运行时、校验、包契约及浏览器夹具

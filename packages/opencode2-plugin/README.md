@@ -11,7 +11,7 @@
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugins": ["@eficy/opencode2-plugin@0.5.8"]
+  "plugins": ["@eficy/opencode2-plugin@0.5.9"]
 }
 ```
 

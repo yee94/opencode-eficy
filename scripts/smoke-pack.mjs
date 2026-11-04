@@ -15,8 +15,9 @@ const temporary = await mkdtemp(resolve(tmpdir(), 'opencode-pack-smoke-'));
 try {
   await writeFile(resolve(temporary, 'package.json'), JSON.stringify({ private: true, type: 'module' }));
   for (const name of tarballs) {
+    const dsh = name.startsWith('eficy-dsh-plugin-');
     const entries = execFileSync('tar', ['-tzf', resolve(artifacts, name)], { encoding: 'utf8' }).trim().split('\n');
-    for (const required of ['dist/index.js', 'dist/gui-experimental.cjs', 'dist/runtime-manifest.json', 'dist/THIRD-PARTY-NOTICES.txt', 'README.md', 'LICENSE']) {
+    for (const required of ['dist/index.js', dsh ? 'dist/client.js' : 'dist/gui-experimental.cjs', 'dist/runtime-manifest.json', 'dist/THIRD-PARTY-NOTICES.txt', 'README.md', 'LICENSE']) {
       assert(entries.includes(`package/${required}`), `${name} is missing ${required}`);
     }
     assert(entries.some(entry => entry.startsWith('package/skills/')), 'Missing skills');
@@ -27,6 +28,10 @@ try {
       }
     }
     assert(entries.some(entry => entry.startsWith('package/samples/')), 'Missing samples');
+    if (dsh) {
+      assert(entries.includes('package/cordis.patch.yml'), 'Missing dsh bundle patch');
+      assert(entries.includes('package/icon.svg'), 'Missing dsh plugin icon');
+    }
     assert(!entries.some(entry => /^package\/(src|node_modules|tests)\//.test(entry)), 'Source or dependencies leaked into tarball');
   }
   execFileSync('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund', ...tarballs.map(name => resolve(artifacts, name))], { cwd: temporary, stdio: 'inherit' });
@@ -36,6 +41,12 @@ try {
     const manifest = JSON.parse(await readFile(resolve(directory, 'dist/runtime-manifest.json'), 'utf8'));
     assert.equal(manifest.pluginVersion, pkg.version);
     assert.equal(pkg.exports['.'], './dist/index.js');
+    if (pkg.dsh) {
+      assert.equal(pkg.exports['./client'], './dist/client.js');
+      assert.equal(pkg.dsh.bundle.patch, './cordis.patch.yml');
+      execFileSync(process.execPath, [resolve(root, 'scripts/smoke-dsh.mjs'), directory], { cwd: temporary, stdio: 'inherit' });
+      continue;
+    }
     assert.equal(pkg.exports['./gui-experimental'], './dist/gui-experimental.cjs');
     execFileSync(process.execPath, ['--input-type=module', '-e', `
       import assert from 'node:assert/strict';

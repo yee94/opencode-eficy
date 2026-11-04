@@ -3,15 +3,15 @@ import { resolve } from 'node:path';
 import { runtimeManifest } from './runtime-manifest.mjs';
 import { packagePath } from './package-path.mjs';
 
-export async function checkBuild(directory) {
+export async function checkBuild(directory, clientBundle = 'gui-experimental.cjs') {
   const root = new URL('../', import.meta.url);
   const tooling = JSON.parse(await readFile(new URL('package.json', root), 'utf8'));
   const pkg = JSON.parse(await readFile(resolve(directory, 'package.json'), 'utf8'));
   const dist = resolve(directory, 'dist');
-  const size = (await stat(resolve(dist, 'gui-experimental.cjs'))).size;
+  const size = (await stat(resolve(dist, clientBundle))).size;
   if (size > 16 * 1024 * 1024) throw new Error(`GUI bundle exceeds 16 MiB: ${size}`);
   const chunks = (await readdir(dist)).filter(name => /\.(?:c?js|mjs)$/.test(name)).sort();
-  if (JSON.stringify(chunks) !== JSON.stringify(['gui-experimental.cjs', 'index.js'])) throw new Error(`Unexpected bundles: ${chunks}`);
+  if (JSON.stringify(chunks) !== JSON.stringify([clientBundle, 'index.js'].sort())) throw new Error(`Unexpected bundles: ${chunks}`);
   const manifest = runtimeManifest(tooling);
   const generated = await readFile(new URL('src/generated/runtime.ts', root), 'utf8');
   const embedded = JSON.parse(generated.slice(generated.indexOf('export default ') + 'export default '.length).trim().replace(/;$/, ''));
