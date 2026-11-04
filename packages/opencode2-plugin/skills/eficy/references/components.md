@@ -71,7 +71,7 @@ const Preview = component(() => <main className="p-4">
 
 默认暗色：iframe 的 html 已设置 `.dark` 和 `color-scheme: dark`，下拉/浮层继承同一主题。使用 shadcn 的 `bg-background`、`text-foreground`、`text-muted-foreground`、`border-border` 等语义工具类。宿主运行时编译 Tailwind/UnoCSS 风格类名；单文件内也可用 `<style>` 定义专用布局。
 
-布局根据页面用途与宿主容器自适应，图表明确高度，宽表格内部横滚。400–600px 的阅读宽度是报告场景的默认建议，不是硬约束：用户指定更宽或更窄时照做，插件只提供引导，不强制限宽。通用页面按任务选择合适宽度。
+布局根据页面用途与宿主容器自适应，图表明确高度，宽表格内部横滚。报告的阅读主题建议见[报告规范](reports.md#暗色阅读主题)；具体宽度和列数按任务选择，用户要求优先。
 
 本地文件链接使用 `<a href="/workspace/页面 文件.eficy">打开页面</a>`，也支持正确编码的 `file://` URL；相对路径基于当前文件目录。目标须是当前服务可访问的真实文件，宿主负责打开文件标签页。`#section` 保留页内锚点，不用 `window.location` 或 `window.open` 导航 iframe；文件链接不等于跨文件 JS import。
 
