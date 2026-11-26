@@ -40,7 +40,7 @@ beforeAll(async () => {
     stdin: { contents: assets.shadcn, loader: 'js' }, bundle: true, write: false, format: 'esm',
     plugins: [{ name: 'installed-remote-modules', setup(builder) {
       builder.onResolve({ filter: /^https:\/\// }, args => {
-        if (args.path === 'https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.1.3/dist/index.js') return { path: upstream, external: true };
+        if (args.path === 'https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.2.0/dist/index.js') return { path: upstream, external: true };
         if (args.path === 'https://cdn.jsdelivr.net/npm/@eficy/charts@0.1.0/dist/index.js') return { path: charts, external: true };
         throw new Error(`Unexpected remote dependency: ${args.path}`);
       });

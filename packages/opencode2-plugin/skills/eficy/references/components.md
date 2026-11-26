@@ -13,8 +13,8 @@
 
 ```tsx
 import { signal, computed, component, batch } from 'eficy';
-import * as ui from 'https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.1.3/dist/index.js';
-import 'https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.1.3/dist/index.css';
+import * as ui from 'https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.2.0/dist/index.js';
+import 'https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.2.0/dist/index.css';
 import { Search, ArrowUpRight, LayoutDashboard, BarChart3 } from 'https://esm.sh/lucide-react@0.468.0?external=react';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   PieChart, Pie, Cell, LineChart, Line, Tooltip as ChartTooltip, Legend as ChartLegend } from 'https://esm.sh/recharts@2.15.4?external=react,react-dom';
@@ -51,8 +51,8 @@ const { Card, CardHeader, CardTitle, CardDescription, CardContent,
 
 ```tsx
 import { signal, computed, component } from 'eficy';
-import { Card, CardContent, Input, Button } from 'https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.1.3/dist/index.js';
-import 'https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.1.3/dist/index.css';
+import { Card, CardContent, Input, Button } from 'https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.2.0/dist/index.js';
+import 'https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.2.0/dist/index.css';
 const name = signal('');
 const message = computed(() => name.value.trim() ? `你好，${name.value.trim()}` : '输入姓名开始');
 const Preview = component(() => <main className="p-4">

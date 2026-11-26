@@ -11,7 +11,7 @@
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugins": ["@eficy/opencode2-plugin@0.5.9"]
+  "plugins": ["@eficy/opencode2-plugin@0.5.10"]
 }
 ```
 
@@ -49,7 +49,7 @@ pnpm test
 
 `.eficy` 是单文件 TSX，默认导出一个 React 组件，支持静态 `eficy`、`shadcn` 与 HTTPS ESM/CSS 导入。文件类型由最后一层后缀识别。完整 Signals 示例见 [`skills/eficy/SKILL.md`](skills/eficy/SKILL.md)。保存后点击文件链接或文件树即可预览。
 
-`import * as ui from 'shadcn'` 提供 `ui.Recharts` 与 `ui.Lucide`。图表使用 `@eficy/charts@0.1.0` 的 Recharts namespace，UI 与图标使用 `@eficy/shadcn-ui@1.1.3`，共享宿主 React/ReactDOM；ChartTooltip/ChartLegend 与图表使用同一实例。适配模块仅在导入 `shadcn` 时加载。图表 CDN 地址尚待发布与浏览器验证。
+`import * as ui from 'shadcn'` 提供 `ui.Recharts` 与 `ui.Lucide`。图表使用 `@eficy/charts@0.1.0` 的 Recharts namespace，UI 与图标使用 `@eficy/shadcn-ui@1.2.0`，共享宿主 React/ReactDOM；ChartTooltip/ChartLegend 与图表使用同一实例。适配模块仅在导入 `shadcn` 时加载。图表 CDN 地址尚待发布与浏览器验证。
 
 源码变化会重新求值模块，模块级 Signal 状态可能重置；同内容更新不应重载。预览状态不是持久数据。文件读取失败、语法或渲染失败必须显示错误；真实浏览器保存更新、交互和恢复流程由集成验收确认。
 

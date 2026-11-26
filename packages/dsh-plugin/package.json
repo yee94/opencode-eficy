@@ -1,6 +1,6 @@
 {
   "name": "@eficy/dsh-plugin",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Eficy interactive TSX previews, reports, skills and export for DeepSeek Harness",
   "icon": "./icon.svg",
   "type": "module",

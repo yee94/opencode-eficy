@@ -18,8 +18,8 @@ description: 创建或修复 .eficy 交互页面、分析报告、看板和图�
 
 ```tsx
 import { signal, computed, component, bind } from 'eficy';
-import { Button, Input, Card, CardContent } from 'https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.1.3/dist/index.js';
-import 'https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.1.3/dist/index.css';
+import { Button, Input, Card, CardContent } from 'https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.2.0/dist/index.js';
+import 'https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.2.0/dist/index.css';
 const name = signal('Ada');
 const count = signal(0);
 const doubled = computed(() => count.value * 2);

@@ -1,5 +1,11 @@
 # @eficy/opencode2-plugin
 
+## 0.5.10
+
+### Patch Changes
+
+- Upgrade pinned `@eficy/shadcn-ui` runtime, skills, report templates, and HTML export bundle from `1.1.3` to `1.2.0` (shadcn/ui v4 `radix-vega` styles and new components).
+
 ## 0.5.9
 
 ### Patch Changes

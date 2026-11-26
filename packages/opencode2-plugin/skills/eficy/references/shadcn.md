@@ -8,8 +8,8 @@ shadcn 是组件写法，不是文件类型。统一生成 `page.eficy`，只需
 
 ```tsx
 import { signal, computed, component } from 'eficy';
-import { Card, CardContent, Button, Input } from 'https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.1.3/dist/index.js';
-import 'https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.1.3/dist/index.css';
+import { Card, CardContent, Button, Input } from 'https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.2.0/dist/index.js';
+import 'https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.2.0/dist/index.css';
 import { Activity } from 'https://esm.sh/lucide-react@0.468.0?external=react';
 import { Recharts } from 'https://cdn.jsdelivr.net/npm/@eficy/charts@0.1.0/dist/index.js';
 const { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } = Recharts;

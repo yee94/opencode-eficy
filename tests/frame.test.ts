@@ -239,7 +239,7 @@ describe('opaque preview frame lifecycle', () => {
     const payload = JSON.parse(html.querySelector('#eficy-payload')!.textContent!);
     expect(payload.theme).toBe('dark');
     expect(payload.eficy).toContain('compileJSXWithCSS');
-    expect(payload.shadcn).toContain('https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.1.3/dist/index.js');
+    expect(payload.shadcn).toContain('https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.2.0/dist/index.js');
     expect(frame.element.srcdoc).not.toContain('src="http');
   });
 });

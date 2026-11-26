@@ -79,7 +79,7 @@ const assets = {
   react: react.outputFiles[0].text,
   eficy,
   shadcn: shadcn.outputFiles[0].text,
-  shadcnCSS: 'https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.1.3/dist/index.css',
+  shadcnCSS: 'https://cdn.jsdelivr.net/npm/@eficy/shadcn-ui@1.2.0/dist/index.css',
   bootstrap: bootstrap.outputFiles[0].text,
   snapshot: snapshot.outputFiles[0].text,
 };
